@@ -15,12 +15,14 @@ ha több szál módosít egy osztályt, akkor ConcurrentModificationException do
 
 A - false, nem muszáj a saját mezőiben tárolni az állapotát
 B - false, lsd előző
-C + igen fele hajlok.
+C - false
 
-konstruktor != metódus.
-static metódus -> osztály lock
-non-static metódus -> object lock
+https://stackoverflow.com/questions/23453568/what-is-the-reason-why-synchronized-is-not-allowed-in-java-8-interface-methods
 
-D ? :D 
+
+D - false,
+
+https://docs.oracle.com/javase/7/docs/api/java/lang/StringBuilder.html
+java.lang.StringBuilder
 
 E - Senki nem definiálja ezt.
