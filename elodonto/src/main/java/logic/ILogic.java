@@ -9,9 +9,10 @@ import java.util.logging.Logger;
 
 public interface ILogic {
     Logger LOG = Logger.getLogger(ILogic.class.getName());
+    String OUR_TEAM = "overload";
 
     static ILogic createLogic() {
-        return new BestOfEveryTimeLogic().collapse(new GuiLogic());
+        return new GuiLogic();
     }
 
     void setMessageConsumer(Consumer<Move> consumer);

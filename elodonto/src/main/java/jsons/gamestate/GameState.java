@@ -1,13 +1,11 @@
 package jsons.gamestate;
 
-import jsons.gamedesc.Player;
-
 import java.util.List;
 
 public class GameState {
     private List<PlanetState> planetStates;
 
-    private List<Player> standings;
+    private List<PlayerState> standings;
 
     private GameStatus gameStatus;
 
@@ -19,7 +17,7 @@ public class GameState {
         return planetStates;
     }
 
-    public List<Player> getStandings() {
+    public List<PlayerState> getStandings() {
         return standings;
     }
 

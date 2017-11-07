@@ -1,31 +1,30 @@
-package jsons.gamedesc;
+package jsons.gamestate;
 
-public class Player {
+public class PlayerState {
     private String userID;
-    private String userName;
-    private int raceID;
+    private int strength;
+    private int score;
 
     public String getUserID() {
         return userID;
     }
 
-    public String getUserName() {
-        return userName;
+    public int getStrength() {
+        return strength;
     }
 
-    public int getRaceID() {
-        return raceID;
+    public int getScore() {
+        return score;
     }
-
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Player player = (Player) o;
+        PlayerState that = (PlayerState) o;
 
-        return userID != null ? userID.equals(player.userID) : player.userID == null;
+        return userID != null ? userID.equals(that.userID) : that.userID == null;
     }
 
     @Override
@@ -35,10 +34,10 @@ public class Player {
 
     @Override
     public String toString() {
-        return "Player{" +
+        return "PlayerState{" +
                 "userID='" + userID + '\'' +
-                ", userName='" + userName + '\'' +
-                ", raceID=" + raceID +
+                ", strength=" + strength +
+                ", score=" + score +
                 '}';
     }
 }
