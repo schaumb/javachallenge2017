@@ -51,6 +51,7 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
     public void onClose(Session session, CloseReason closeReason) {
         super.onClose(session, closeReason);
 
+        logic.close();
         LOG.warning("Closed: " + closeReason.getReasonPhrase());
         System.exit(0);
     }
@@ -59,6 +60,7 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
     public void onError(Session session, Throwable thr) {
         super.onError(session, thr);
 
+        logic.close();
         LOG.log(Level.WARNING, "onError", thr);
         System.exit(0);
     }

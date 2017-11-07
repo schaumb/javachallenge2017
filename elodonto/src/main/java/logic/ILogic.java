@@ -7,7 +7,7 @@ import jsons.gamestate.GameState;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-public interface ILogic {
+public interface ILogic extends AutoCloseable {
     Logger LOG = Logger.getLogger(ILogic.class.getName());
     String OUR_TEAM = "overload";
 
@@ -42,5 +42,10 @@ public interface ILogic {
                 other.setGameState(gameState);
             }
         };
+    }
+
+    @Override
+    default void close() {
+
     }
 }
