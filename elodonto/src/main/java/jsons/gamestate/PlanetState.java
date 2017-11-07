@@ -1,8 +1,12 @@
 package jsons.gamestate;
 
+import jsons.common.IOwned;
+import jsons.gamedesc.GameDescription;
+import jsons.gamedesc.Planet;
+
 import java.util.List;
 
-public class PlanetState {
+public class PlanetState implements IOwned {
     private int planetID;
     private String owner;
     private double ownershipRatio;
@@ -10,10 +14,15 @@ public class PlanetState {
     private List<Armies> movingArmies;
     private List<Armies> stationedArmies;
 
+    public Planet getAsPlanet() {
+        return GameDescription.LATEST_INSTANCE.getPlanet(getPlanetID());
+    }
+
     public int getPlanetID() {
         return planetID;
     }
 
+    @Override
     public String getOwner() {
         return owner;
     }

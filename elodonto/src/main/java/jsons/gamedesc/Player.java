@@ -1,9 +1,17 @@
 package jsons.gamedesc;
 
+import logic.ILogic;
+
+import java.util.Objects;
+
 public class Player {
     private String userID;
     private String userName;
     private int raceID;
+
+    public boolean isUs() {
+        return Objects.equals(userID, ILogic.OUR_TEAM);
+    }
 
     public String getUserID() {
         return userID;

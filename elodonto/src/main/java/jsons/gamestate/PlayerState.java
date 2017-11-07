@@ -1,9 +1,16 @@
 package jsons.gamestate;
 
+import jsons.gamedesc.GameDescription;
+import jsons.gamedesc.Player;
+
 public class PlayerState {
     private String userID;
     private int strength;
     private int score;
+
+    public Player getAsPlayer() {
+        return GameDescription.LATEST_INSTANCE.getPlayer(getUserID());
+    }
 
     public String getUserID() {
         return userID;

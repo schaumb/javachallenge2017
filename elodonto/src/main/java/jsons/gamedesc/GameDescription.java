@@ -1,8 +1,12 @@
 package jsons.gamedesc;
 
+import logic.ILogic;
+
 import java.util.List;
+import java.util.Objects;
 
 public class GameDescription {
+    public static GameDescription LATEST_INSTANCE;
     private int gameLength;
     private int mapSizeX;
     private int mapSizeY;
@@ -22,6 +26,26 @@ public class GameDescription {
     private List<Planet> planets;
 
     private List<Player> players;
+
+    public GameDescription() {
+        LATEST_INSTANCE = this;
+    }
+
+    public Player getPlayer(String id) {
+        return getPlayers().stream()
+                .filter(p -> Objects.equals(p.getUserID(), id))
+                .findAny().orElse(null);
+    }
+
+    public Player getOurPlayer() {
+        return getPlayer(ILogic.OUR_TEAM);
+    }
+
+    public Planet getPlanet(int id) {
+        return getPlanets().stream()
+                .filter(p -> p.getPlanetID() == id)
+                .findAny().orElse(null);
+    }
 
     public int getGameLength() {
         return gameLength;

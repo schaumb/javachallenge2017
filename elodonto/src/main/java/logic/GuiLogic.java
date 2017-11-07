@@ -1,6 +1,7 @@
 package logic;
 
 import jsons.Move;
+import jsons.common.Positioned;
 import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
 import jsons.gamestate.Armies;
@@ -14,7 +15,6 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -77,7 +77,7 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                         if (move.getMoveFrom() == planet.getPlanetID()) {
                             myColor = new Color(139, 69, 19);
                         }
-                        g.setColor(getTransitionColor(Color.GRAY, Objects.equals(planetState.getOwner(), OUR_TEAM) ? myColor : Color.RED, planetState.getOwnershipRatio()));
+                        g.setColor(getTransitionColor(Color.GRAY, planetState.isOurs() ? myColor : Color.RED, planetState.getOwnershipRatio()));
                         g.fillArc(planet.getX() - planet.getRadius(), planet.getY() - planet.getRadius(),
                                 planet.getRadius() * 2, planet.getRadius() * 2, 0, 360);
 
@@ -88,14 +88,14 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                             g.setFont(new Font("Arial", Font.PLAIN, size));
                             for (int i = 0; i < stationedArmies.size(); ++i) {
                                 Armies armies = stationedArmies.get(i);
-                                g.setColor(Objects.equals(armies.getOwner(), OUR_TEAM) ? Color.BLUE : Color.MAGENTA);
+                                g.setColor(armies.isOurs() ? Color.BLUE : Color.MAGENTA);
 
                                 g.drawString("" + armies.getSize(), planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + i * size);
                             }
                         }
                         for (Armies armies : planetState.getMovingArmies()) {
-                            g.setColor(Objects.equals(armies.getOwner(), OUR_TEAM) ? Color.BLUE : Color.MAGENTA);
-                            g.drawString("" + armies.getSize(), (int) armies.getX(), (int) armies.getY());
+                            g.setColor(armies.isOurs() ? Color.BLUE : Color.MAGENTA);
+                            g.drawString("" + armies.getSize(), armies.getX().intValue(), armies.getY().intValue());
                         }
                     });
                 }
@@ -110,7 +110,7 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
     public void mouseClicked(MouseEvent mouseEvent) {
         if (gameDescription != null) {
             Optional<Planet> first = gameDescription.getPlanets()
-                    .stream().filter(p -> Math.sqrt(Math.pow(p.getX() - mouseEvent.getX(), 2) + Math.pow(p.getY() - mouseEvent.getY(), 2)) < p.getRadius())
+                    .stream().filter(p -> p.distance(new Positioned<>(mouseEvent.getX(), mouseEvent.getY())) < p.getRadius())
                     .findFirst();
 
             if (first.isPresent()) {

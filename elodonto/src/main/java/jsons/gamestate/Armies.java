@@ -1,25 +1,23 @@
 package jsons.gamestate;
 
-public class Armies {
+import jsons.common.IOwned;
+import jsons.common.Positioned;
+
+public class Armies extends Positioned<Double> implements IOwned {
     private String owner;
     private int size;
-    private double x;
-    private double y;
 
+    public boolean isInMove() {
+        return getX() != null && getY() != null;
+    }
+
+    @Override
     public String getOwner() {
         return owner;
     }
 
     public int getSize() {
         return size;
-    }
-
-    public double getX() {
-        return x;
-    }
-
-    public double getY() {
-        return y;
     }
 
     @Override
@@ -30,8 +28,8 @@ public class Armies {
         Armies armies = (Armies) o;
 
         if (size != armies.size) return false;
-        if (Double.compare(armies.x, x) != 0) return false;
-        if (Double.compare(armies.y, y) != 0) return false;
+        if (Double.compare(armies.getX(), getX()) != 0) return false;
+        if (Double.compare(armies.getY(), getY()) != 0) return false;
         return owner != null ? owner.equals(armies.owner) : armies.owner == null;
     }
 
@@ -41,9 +39,9 @@ public class Armies {
         long temp;
         result = owner != null ? owner.hashCode() : 0;
         result = 31 * result + size;
-        temp = Double.doubleToLongBits(x);
+        temp = Double.doubleToLongBits(getX());
         result = 31 * result + (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(y);
+        temp = Double.doubleToLongBits(getY());
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;
     }
@@ -53,8 +51,8 @@ public class Armies {
         return "Armies{" +
                 "owner='" + owner + '\'' +
                 ", size=" + size +
-                ", x=" + x +
-                ", y=" + y +
+                ", x=" + getX() +
+                ", y=" + getY() +
                 '}';
     }
 }
