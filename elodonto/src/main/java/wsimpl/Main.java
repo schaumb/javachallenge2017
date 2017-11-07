@@ -12,8 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Main {
-    public static void main(String[] args) throws IOException, DeploymentException {
-
+    public static void main(String[] args) throws IOException, DeploymentException, InterruptedException {
         WebSocketContainer webSocket = ContainerProvider.getWebSocketContainer();
         ClientEndpointConfig.Configurator configurator = new ClientEndpointConfig.Configurator() {
             @Override
@@ -25,7 +24,8 @@ public class Main {
 
         webSocket.connectToServer(ClientEndpoint.class, config, URI.create("ws://javachallenge.loxon.hu:8080/JavaChallenge2017/websocket"));
 
-
-
+        while (true) {
+            Thread.sleep(Long.MAX_VALUE);
+        }
     }
 }

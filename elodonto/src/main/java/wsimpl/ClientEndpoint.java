@@ -1,36 +1,72 @@
 package wsimpl;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import jsons.Move;
+import jsons.gamedesc.GameDescription;
+import jsons.gamestate.GameState;
+import logic.ILogic;
+
 import javax.websocket.*;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<String> {
-	private Session session;
+public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<String>, Consumer<Move> {
+    private final static Logger LOG = Logger.getLogger(ClientEndpoint.class.getName());
+    private Session session;
+    private boolean firstMessage = true;
+    private Gson gson = new GsonBuilder().create();
 
-	@Override
-	public void onOpen(Session session, EndpointConfig config) {
-		session.addMessageHandler(this);
-		this.session = session;
-		System.err.println("OPEN");
-	}
+    private ILogic logic = ILogic.createLogic();
 
-	@Override
-	public void onMessage(String message) {
-		System.out.println(message);
-		System.err.println("MESSAGE");
-	}
+    @Override
+    public void onOpen(Session session, EndpointConfig config) {
+        session.addMessageHandler(this);
+        this.session = session;
+        logic.setMessageConsumer(this);
+    }
 
-	@Override
-	public void onClose(Session session, CloseReason closeReason) {
-		super.onClose(session, closeReason);
-		System.err.println("ONCLOSE");
-	}
+    @Override
+    public void onMessage(String message) {
+        if (message.isEmpty()) {
+            System.err.println("Got an empty message");
+            return;
+        }
 
-	@Override
-	public void onError(Session session, Throwable thr) {
-		super.onError(session, thr);
-		System.err.println("ONERROR");
-	}
+        LOG.fine("Got message: " + message);
+        if (firstMessage) {
+            GameDescription gameDescription = gson.fromJson(message, GameDescription.class);
+            LOG.fine("Consumed message as description: " + gameDescription);
+            logic.setGameDescription(gameDescription);
+            firstMessage = false;
+        } else {
+            GameState gameState = gson.fromJson(message, GameState.class);
+            LOG.fine("Consumed message as state: " + gameState);
+            logic.setGameState(gameState);
+        }
+    }
 
-	private void sendMessage(String message) {
-		session.getAsyncRemote().sendText(message);
-	}
+    @Override
+    public void onClose(Session session, CloseReason closeReason) {
+        super.onClose(session, closeReason);
+
+        LOG.warning("Closed: " + closeReason.getReasonPhrase());
+        System.exit(0);
+    }
+
+    @Override
+    public void onError(Session session, Throwable thr) {
+        super.onError(session, thr);
+
+        LOG.log(Level.WARNING, "onError", thr);
+        System.exit(0);
+    }
+
+    @Override
+    public void accept(Move move) {
+        String s = gson.toJson(move);
+        LOG.fine("Send move message: " + move + " as Json: " + s);
+        session.getAsyncRemote().sendText(s);
+    }
 }
