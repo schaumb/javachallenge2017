@@ -11,7 +11,7 @@ public interface ILogic {
     Logger LOG = Logger.getLogger(ILogic.class.getName());
 
     static ILogic createLogic() {
-        return new BestOfEveryTimeLogic();
+        return new BestOfEveryTimeLogic().collapse(new GuiLogic());
     }
 
     void setMessageConsumer(Consumer<Move> consumer);
@@ -21,22 +21,23 @@ public interface ILogic {
     void setGameState(GameState gameState);
 
     default ILogic collapse(ILogic other) {
+        ILogic orig = this;
         return new ILogic() {
             @Override
             public void setMessageConsumer(Consumer<Move> consumer) {
-                this.setMessageConsumer(consumer);
+                orig.setMessageConsumer(consumer);
                 other.setMessageConsumer(consumer);
             }
 
             @Override
             public void setGameDescription(GameDescription gameDescription) {
-                this.setGameDescription(gameDescription);
+                orig.setGameDescription(gameDescription);
                 other.setGameDescription(gameDescription);
             }
 
             @Override
             public void setGameState(GameState gameState) {
-                this.setGameState(gameState);
+                orig.setGameState(gameState);
                 other.setGameState(gameState);
             }
         };
