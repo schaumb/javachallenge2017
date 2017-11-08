@@ -168,6 +168,11 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
 
     }
 
+    @Override
+    public void close() {
+        frame.dispose();
+    }
+
     private class DrawPane extends JPanel {
         public void paintComponent(Graphics g) {
             paintTo((Graphics2D) g);
@@ -181,7 +186,7 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
             addKeyListener(GuiLogic.this);
             setContentPane(new DrawPane());
             setTitle("GuiClickLogic");
-            setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+            setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
             setResizable(false);
             setSize(dimension);
 

@@ -53,7 +53,8 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
 
         logic.close();
         LOG.warning("Closed: " + closeReason.getReasonPhrase());
-        System.exit(0);
+
+        end();
     }
 
     @Override
@@ -62,7 +63,14 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
 
         logic.close();
         LOG.log(Level.WARNING, "onError", thr);
-        System.exit(0);
+
+        end();
+    }
+
+    private void end() {
+        synchronized (Main.o) {
+            Main.o.notifyAll();
+        }
     }
 
     @Override

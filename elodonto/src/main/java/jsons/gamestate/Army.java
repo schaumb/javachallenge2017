@@ -3,10 +3,9 @@ package jsons.gamestate;
 import jsons.common.IOwned;
 import jsons.common.Positioned;
 
-import java.io.Serializable;
 import java.util.Objects;
 
-public class Army extends Positioned<Double> implements IOwned, Serializable {
+public class Army extends Positioned<Double> implements IOwned {
     private String owner;
     private int size;
 

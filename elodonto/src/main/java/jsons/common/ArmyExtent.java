@@ -5,10 +5,9 @@ import jsons.gamedesc.Planet;
 import jsons.gamestate.Army;
 import jsons.gamestate.GameState;
 
-import java.io.Serializable;
 import java.util.Comparator;
 
-public class ArmyExtent implements Serializable {
+public class ArmyExtent {
     private final Army army;
     private final long fromTime;
     private final int fromPlanet;
