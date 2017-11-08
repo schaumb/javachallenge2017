@@ -1,6 +1,7 @@
 package jsons.gamestate;
 
 import jsons.common.ArmyExtent;
+import jsons.common.PlayerExtent;
 import jsons.gamedesc.GameDescription;
 import logic.ILogic;
 
@@ -29,6 +30,10 @@ public class GameState {
         return new ArmyExtent(GameDescription.LATEST_INSTANCE, this, army);
     }
 
+    public PlayerExtent getPlayerExtent(PlayerState state) {
+        return new PlayerExtent(GameDescription.LATEST_INSTANCE, this, state);
+    }
+
     private PlayerState getPlayerState(String id) {
         return getStandings().stream()
                 .filter(p -> Objects.equals(p.getUserID(), id))
@@ -49,7 +54,7 @@ public class GameState {
         return planetStates;
     }
 
-    private List<PlayerState> getStandings() {
+    public List<PlayerState> getStandings() {
         return standings;
     }
 

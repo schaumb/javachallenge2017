@@ -7,6 +7,7 @@ import java.util.Objects;
 
 public class GameDescription {
     public static GameDescription LATEST_INSTANCE;
+    public static long GAME_STARTED_MS = -1;
     private int gameLength;
     private int mapSizeX;
     private int mapSizeY;
@@ -45,6 +46,14 @@ public class GameDescription {
         return getPlanets().stream()
                 .filter(p -> p.getPlanetID() == id)
                 .findAny().orElse(null);
+    }
+
+    public long getCurrentTime() {
+        return Math.max(0, Math.min(getGameLength(), System.currentTimeMillis() - GameDescription.GAME_STARTED_MS));
+    }
+
+    public long getRemainingTime() {
+        return getGameLength() - getCurrentTime();
     }
 
     public int getGameLength() {

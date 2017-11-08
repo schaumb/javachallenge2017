@@ -5,16 +5,20 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import jsons.Move;
 import jsons.common.ArmyExtent;
-import jsons.common.IOwned;
 import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
 import jsons.gamestate.Army;
 import jsons.gamestate.GameState;
 import jsons.gamestate.PlanetState;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -67,6 +71,9 @@ public class CopyLogic implements ILogic, Runnable {
 
     @Override
     public void setGameState(GameState gameState) {
+        int strength = gameState.getOurState().getStrength();
+        boolean worstThanEnemy = gameState.getStandings().stream().anyMatch(s -> s.getStrength() > strength);
+        System.err.println(gameState.getTimeElapsed() + ": Possible score: " + gameState.getPlayerExtent(gameState.getOurState()).getCurrentPossibleScore() + " " + gameState.getStandings() + " " + (worstThanEnemy ? " we have less strength than enemy :(" : ""));
         if (this.currGameState == null || gameState.getTimeElapsed() == 0) {
             now.upside = !gameState.getPlanetState(101).isOurs();
             notFromStart = gameState.getTimeElapsed() != 0;
@@ -89,7 +96,7 @@ public class CopyLogic implements ILogic, Runnable {
     public void close() {
         while (th.isAlive())
             th.interrupt();
-        if(!notFromStart) {
+        if (!notFromStart) {
             now.score = currGameState.getOurState().getScore();
             System.err.println(now);
             System.err.println(best.score);
@@ -116,51 +123,54 @@ public class CopyLogic implements ILogic, Runnable {
         Function<Integer, Integer> transformer = needSwitch ?
                 i -> i % 2 == 0 ? i - 1 : i + 1
                 : Function.identity();
-        prev.doing
-                .stream()
-                .sorted(Comparator.comparingLong(ArmyExtent::getFromTime))
-                .forEach(d -> {
-                    try {
-                        long timeToSleep = d.getFromTime() - (System.currentTimeMillis() - startMS);
 
-                        if (timeToSleep > 0)
-                            Thread.sleep(d.getFromTime() - (System.currentTimeMillis() - startMS));
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    System.err.println("Sleeped to " + d.getFromTime());
+        List<ArmyExtent> toSort = new ArrayList<>(prev.doing);
+        toSort.sort(Comparator.comparingLong(ArmyExtent::getFromTime));
 
-                    Integer fromPlanetID = transformer.apply(d.getFromPlanet());
-                    PlanetState fromPlanetState = currGameState.getPlanetState(fromPlanetID);
-                    if (fromPlanetState.getStationedArmies().size() == 1 &&
-                        fromPlanetState.getMovingArmies().stream().allMatch(IOwned::isOurs)
+        for (ArmyExtent d : toSort) {
+            try {
+                long timeToSleep = d.getFromTime() - (System.currentTimeMillis() - startMS);
+
+                if (timeToSleep > 0)
+                    Thread.sleep(d.getFromTime() - (System.currentTimeMillis() - startMS));
+            } catch (InterruptedException e) {
+                break;
+            }
+            System.err.println("Sleeped to " + d.getFromTime());
+
+            Integer fromPlanetID = transformer.apply(d.getFromPlanet());
+            PlanetState fromPlanetState = currGameState.getPlanetState(fromPlanetID);
+            if (fromPlanetState.getStationedArmies().size() == 1 &&
+                    fromPlanetState.getMovingArmies().stream().filter(a -> !a.isOurs())
+                            .mapToInt(Army::getSize).sum() < (fromPlanetState.getStationedArmies().get(0).getSize())
                     && fromPlanetState.getOwnershipRatio() < 1.0) {
-                        Army army = fromPlanetState.getStationedArmies().get(0);
+                Army army = fromPlanetState.getStationedArmies().get(0);
 
-                        if(army.getSize() == d.getArmy().getSize()) {
+                if (army.getSize() == d.getArmy().getSize()) {
+                    Planet asPlanet = fromPlanetState.getAsPlanet();
+
+                    double seconds = army.getSize() * gameDescription.getCaptureSpeed() / Math.pow(asPlanet.getRadius(), gameDescription.getPlanetExponent());
+
+                    double timeNeed = (1.0 - fromPlanetState.getOwnershipRatio()) * seconds / 1000;
+                    long floor = (long) timeNeed;
+
+                    try {
+                        if (floor > 100) {
                             System.err.println("Hacked to wait");
-                            Planet asPlanet = fromPlanetState.getAsPlanet();
-
-                            double seconds = army.getSize() * gameDescription.getCaptureSpeed() / Math.pow(asPlanet.getRadius(), gameDescription.getPlanetExponent());
-
-                            double timeNeed = (1.0 - fromPlanetState.getOwnershipRatio()) * seconds / 1000;
-                            long floor = (long) timeNeed;
-
-                            try {
-                                if(floor > 0)
-                                    Thread.sleep(floor);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
+                            Thread.sleep(floor);
                         }
+                    } catch (InterruptedException e) {
+                        break;
                     }
+                }
+            }
 
-                    consumer.accept(new Move().setArmySize(d.getArmy().getSize()).setMoveFrom(
-                            fromPlanetID
-                    ).setMoveTo(
-                            transformer.apply(d.getToPlanet())
-                    ));
-                });
+            consumer.accept(new Move().setArmySize(d.getArmy().getSize()).setMoveFrom(
+                    fromPlanetID
+            ).setMoveTo(
+                    transformer.apply(d.getToPlanet())
+            ));
+        }
     }
 
     static class MoveState {

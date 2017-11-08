@@ -13,7 +13,11 @@ public interface IOwned {
     }
 
     default boolean isOurs() {
-        return Objects.equals(ILogic.OUR_TEAM, getOwner());
+        return isOwns(ILogic.OUR_TEAM);
+    }
+
+    default boolean isOwns(String oth) {
+        return Objects.equals(oth, getOwner());
     }
 
     String getOwner();

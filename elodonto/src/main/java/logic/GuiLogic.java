@@ -70,38 +70,38 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                 }
             } else {
                 for (PlanetState planetState : currGameState.getPlanetStates()) {
-                    gameDescription.getPlanets().stream().filter(p -> p.getPlanetID() == planetState.getPlanetID())
-                            .findFirst().ifPresent(planet -> {
+                    Planet planet = planetState.getAsPlanet();
 
-                        Color myColor = Color.GREEN;
-                        if (move.getMoveFrom() == planet.getPlanetID()) {
-                            myColor = new Color(139, 69, 19);
-                        }
-                        g.setColor(getTransitionColor(Color.GRAY, planetState.isOurs() ? myColor : Color.RED, planetState.getOwnershipRatio()));
-                        g.fillArc(planet.getX() - planet.getRadius(), planet.getY() - planet.getRadius(),
-                                planet.getRadius() * 2, planet.getRadius() * 2, 0, 360);
+                    Color myColor = Color.GREEN;
+                    if (move.getMoveFrom() == planet.getPlanetID()) {
+                        myColor = new Color(139, 69, 19);
+                    }
+                    g.setColor(getTransitionColor(Color.GRAY, planetState.isOurs() ? myColor : Color.RED, planetState.getOwnershipRatio()));
+                    g.fillArc(planet.getX() - planet.getRadius(), planet.getY() - planet.getRadius(),
+                            planet.getRadius() * 2, planet.getRadius() * 2, 0, 360);
+                    g.setFont(new Font("Arial", Font.PLAIN, 20));
+                    g.setColor(Color.BLACK);
+                    g.drawString(planetState.getPlanetID() + "", planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + planet.getRadius() / 4);
+                }
+                for (PlanetState planetState : currGameState.getPlanetStates()) {
+                    Planet planet = planetState.getAsPlanet();
 
-
-                        g.setFont(new Font("Arial", Font.PLAIN, 20));
-                        g.setColor(Color.BLACK);
-                        g.drawString(planetState.getPlanetID() + "", planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + planet.getRadius() / 4);
-                        List<Army> stationedArmies = planetState.getStationedArmies();
-                        if (!stationedArmies.isEmpty()) {
-                            int size = planet.getRadius() / stationedArmies.size();
-                            g.setFont(new Font("Arial", Font.PLAIN, size));
-                            for (int i = 0; i < stationedArmies.size(); ++i) {
-                                Army army = stationedArmies.get(i);
-                                g.setColor(army.isOurs() ? Color.BLUE : Color.MAGENTA);
-
-                                g.drawString("" + army.getSize(), planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + i * size);
-                            }
-                        }
-                        for (Army army : planetState.getMovingArmies()) {
-                            g.setFont(new Font("Arial", Font.PLAIN, 20));
+                    List<Army> stationedArmies = planetState.getStationedArmies();
+                    if (!stationedArmies.isEmpty()) {
+                        int size = planet.getRadius() / stationedArmies.size();
+                        g.setFont(new Font("Arial", Font.PLAIN, size));
+                        for (int i = 0; i < stationedArmies.size(); ++i) {
+                            Army army = stationedArmies.get(i);
                             g.setColor(army.isOurs() ? Color.BLUE : Color.MAGENTA);
-                            g.drawString("" + army.getSize(), army.getX().intValue(), army.getY().intValue());
+
+                            g.drawString("" + army.getSize(), planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + i * size);
                         }
-                    });
+                    }
+                    for (Army army : planetState.getMovingArmies()) {
+                        g.setFont(new Font("Arial", Font.PLAIN, 20));
+                        g.setColor(army.isOurs() ? Color.BLUE : Color.MAGENTA);
+                        g.drawString("" + army.getSize(), army.getX().intValue(), army.getY().intValue());
+                    }
                 }
 
             }
