@@ -31,6 +31,7 @@ public class CopyLogic implements ILogic, Runnable {
     private GameState currGameState;
     private long startMS;
     private boolean notFromStart = true;
+    private Thread th;
 
 
     CopyLogic() {
@@ -70,7 +71,8 @@ public class CopyLogic implements ILogic, Runnable {
             now.upside = !gameState.getPlanetState(101).isOurs();
             notFromStart = gameState.getTimeElapsed() != 0;
             startMS = System.currentTimeMillis();
-            new Thread(this).start();
+            th = new Thread(this);
+            th.start();
         }
         this.currGameState = gameState;
 
@@ -85,9 +87,12 @@ public class CopyLogic implements ILogic, Runnable {
 
     @Override
     public void close() {
+        while (th.isAlive())
+            th.interrupt();
         if(!notFromStart) {
-            System.err.println(now);
             now.score = currGameState.getOurState().getScore();
+            System.err.println(now);
+            System.err.println(best.score);
             if (best.score < now.score) {
                 try (FileOutputStream fos = new FileOutputStream(SERIALIZED_BEST)) {
                     fos.write(gson.toJson(now, MoveState.class).getBytes());
