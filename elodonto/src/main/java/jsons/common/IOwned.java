@@ -20,5 +20,9 @@ public interface IOwned {
         return Objects.equals(oth, getOwner());
     }
 
+    default boolean hasOwner() {
+        return getOwner() != null;
+    }
+
     String getOwner();
 }

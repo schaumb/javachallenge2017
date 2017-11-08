@@ -1,6 +1,7 @@
 package jsons.gamestate;
 
 import jsons.common.ArmyExtent;
+import jsons.common.PlanetExtent;
 import jsons.common.PlayerExtent;
 import jsons.gamedesc.GameDescription;
 import logic.ILogic;
@@ -32,6 +33,10 @@ public class GameState {
 
     public PlayerExtent getPlayerExtent(PlayerState state) {
         return new PlayerExtent(GameDescription.LATEST_INSTANCE, this, state);
+    }
+
+    public PlanetExtent getPlanetExtent(PlanetState state) {
+        return new PlanetExtent(GameDescription.LATEST_INSTANCE, this, state);
     }
 
     private PlayerState getPlayerState(String id) {

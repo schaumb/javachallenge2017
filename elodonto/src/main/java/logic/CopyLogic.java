@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import jsons.Move;
 import jsons.common.ArmyExtent;
+import jsons.common.IOwned;
 import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
 import jsons.gamestate.Army;
@@ -15,10 +16,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -165,6 +163,17 @@ public class CopyLogic implements ILogic, Runnable {
                 }
             }
 
+            Optional<Army> first = fromPlanetState.getStationedArmies().stream()
+                    .filter(IOwned::isOurs).findFirst();
+
+            if (first.isPresent()) {
+                Army army = first.get();
+                if (army.getSize() < d.getArmy().getSize()) {
+                    System.err.println("Can not make move properly, not enough army: " + d + " at " + fromPlanetState);
+                }
+            } else {
+                System.err.println("Can not make move, not has army: " + d);
+            }
             consumer.accept(new Move().setArmySize(d.getArmy().getSize()).setMoveFrom(
                     fromPlanetID
             ).setMoveTo(

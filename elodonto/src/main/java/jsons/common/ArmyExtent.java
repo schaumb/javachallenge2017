@@ -44,6 +44,11 @@ public class ArmyExtent {
         return toPlanet;
     }
 
+    public long getToTime() {
+        return getFromTime() + Math.round(GameDescription.LATEST_INSTANCE.getPlanet(fromPlanet).distance(
+                GameDescription.LATEST_INSTANCE.getPlanet(toPlanet)) * GameDescription.LATEST_INSTANCE.getMovementSpeed() / 1000);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
