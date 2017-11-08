@@ -4,7 +4,7 @@ import jsons.Move;
 import jsons.common.Positioned;
 import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
-import jsons.gamestate.Armies;
+import jsons.gamestate.Army;
 import jsons.gamestate.GameState;
 import jsons.gamestate.PlanetState;
 
@@ -19,7 +19,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
-    public Move move = new Move().setMoveFrom(-1).setMoveTo(-1);
+    private Move move = new Move().setMoveFrom(-1).setMoveTo(-1);
     private JFrame frame;
     private Consumer<Move> consumer;
     private GameDescription gameDescription;
@@ -82,20 +82,24 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                                 planet.getRadius() * 2, planet.getRadius() * 2, 0, 360);
 
 
-                        List<Armies> stationedArmies = planetState.getStationedArmies();
+                        g.setFont(new Font("Arial", Font.PLAIN, 20));
+                        g.setColor(Color.BLACK);
+                        g.drawString(planetState.getPlanetID() + "", planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + planet.getRadius() / 4);
+                        List<Army> stationedArmies = planetState.getStationedArmies();
                         if (!stationedArmies.isEmpty()) {
                             int size = planet.getRadius() / stationedArmies.size();
                             g.setFont(new Font("Arial", Font.PLAIN, size));
                             for (int i = 0; i < stationedArmies.size(); ++i) {
-                                Armies armies = stationedArmies.get(i);
-                                g.setColor(armies.isOurs() ? Color.BLUE : Color.MAGENTA);
+                                Army army = stationedArmies.get(i);
+                                g.setColor(army.isOurs() ? Color.BLUE : Color.MAGENTA);
 
-                                g.drawString("" + armies.getSize(), planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + i * size);
+                                g.drawString("" + army.getSize(), planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + i * size);
                             }
                         }
-                        for (Armies armies : planetState.getMovingArmies()) {
-                            g.setColor(armies.isOurs() ? Color.BLUE : Color.MAGENTA);
-                            g.drawString("" + armies.getSize(), armies.getX().intValue(), armies.getY().intValue());
+                        for (Army army : planetState.getMovingArmies()) {
+                            g.setFont(new Font("Arial", Font.PLAIN, 20));
+                            g.setColor(army.isOurs() ? Color.BLUE : Color.MAGENTA);
+                            g.drawString("" + army.getSize(), army.getX().intValue(), army.getY().intValue());
                         }
                     });
                 }

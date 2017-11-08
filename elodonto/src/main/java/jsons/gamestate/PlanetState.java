@@ -11,8 +11,8 @@ public class PlanetState implements IOwned {
     private String owner;
     private double ownershipRatio;
 
-    private List<Armies> movingArmies;
-    private List<Armies> stationedArmies;
+    private List<Army> movingArmies;
+    private List<Army> stationedArmies;
 
     public Planet getAsPlanet() {
         return GameDescription.LATEST_INSTANCE.getPlanet(getPlanetID());
@@ -31,11 +31,11 @@ public class PlanetState implements IOwned {
         return ownershipRatio;
     }
 
-    public List<Armies> getMovingArmies() {
+    public List<Army> getMovingArmies() {
         return movingArmies;
     }
 
-    public List<Armies> getStationedArmies() {
+    public List<Army> getStationedArmies() {
         return stationedArmies;
     }
 

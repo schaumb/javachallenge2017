@@ -12,7 +12,7 @@ public interface ILogic extends AutoCloseable {
     String OUR_TEAM = "overload";
 
     static ILogic createLogic() {
-        return new GuiLogic();
+        return new GuiLogic().collapse(new CopyLogic());
     }
 
     void setMessageConsumer(Consumer<Move> consumer);
@@ -40,6 +40,12 @@ public interface ILogic extends AutoCloseable {
             public void setGameState(GameState gameState) {
                 orig.setGameState(gameState);
                 other.setGameState(gameState);
+            }
+
+            @Override
+            public void close() {
+                orig.close();
+                other.close();
             }
         };
     }

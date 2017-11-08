@@ -1,5 +1,7 @@
 package jsons.gamestate;
 
+import jsons.common.ArmyExtent;
+import jsons.gamedesc.GameDescription;
 import logic.ILogic;
 
 import java.util.List;
@@ -16,14 +18,18 @@ public class GameState {
 
     private int remainingPlayers;
 
-    public PlanetState getArmiesPlanetState(Armies armies) {
+    public PlanetState getArmyPlanetState(Army army) {
         return getPlanetStates().stream()
-                .filter(pss -> pss.getStationedArmies().stream().anyMatch(a -> a == armies) ||
-                        pss.getMovingArmies().stream().anyMatch(a -> a == armies))
+                .filter(pss -> pss.getStationedArmies().stream().anyMatch(a -> a == army) ||
+                        pss.getMovingArmies().stream().anyMatch(a -> a == army))
                 .findAny().orElse(null);
     }
 
-    public PlayerState getPlayerState(String id) {
+    public ArmyExtent getArmyExtent(Army army) {
+        return new ArmyExtent(GameDescription.LATEST_INSTANCE, this, army);
+    }
+
+    private PlayerState getPlayerState(String id) {
         return getStandings().stream()
                 .filter(p -> Objects.equals(p.getUserID(), id))
                 .findAny().orElse(null);
@@ -43,7 +49,7 @@ public class GameState {
         return planetStates;
     }
 
-    public List<PlayerState> getStandings() {
+    private List<PlayerState> getStandings() {
         return standings;
     }
 
