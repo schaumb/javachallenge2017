@@ -91,8 +91,16 @@ public class PlanetExtent {
         return endWithoutInterruption;
     }
 
+    public long getEndTickWithoutInterruption() {
+        return GameDescription.LATEST_INSTANCE.getTickFromTime(endWithoutInterruption);
+    }
+
     public long getInterruptionTime() {
         return interruptionTime;
+    }
+
+    public long getInterruptionTick() {
+        return GameDescription.LATEST_INSTANCE.getTickFromTime(getInterruptionTime());
     }
 
     public long getTimeWhenCreatedArmiesWithoutInterrupt(int armySize) {

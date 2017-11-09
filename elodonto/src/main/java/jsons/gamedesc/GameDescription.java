@@ -188,4 +188,8 @@ public class GameDescription {
                 ", players=" + players +
                 '}';
     }
+
+    public long getTickFromTime(long time) {
+        return time / getBroadcastSchedule();
+    }
 }

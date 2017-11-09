@@ -28,12 +28,27 @@ public class ArmyExtent {
         this.fromTime = planet == null ? timeElapsed : Math.round(timeElapsed - 1000 * army.distance(planet) / gameDescription.getMovementSpeed());
     }
 
+    public ArmyExtent(Army army, long fromTime, int fromPlanet, int toPlanet) {
+        this.army = army;
+        this.fromTime = fromTime;
+        this.fromPlanet = fromPlanet;
+        this.toPlanet = toPlanet;
+    }
+
     public Army getArmy() {
         return army;
     }
 
     public long getFromTime() {
         return fromTime;
+    }
+
+    public long getFromTick() {
+        return GameDescription.LATEST_INSTANCE.getTickFromTime(getFromTime());
+    }
+
+    public long getToTick() {
+        return GameDescription.LATEST_INSTANCE.getTickFromTime(getToTime());
     }
 
     public int getFromPlanet() {
@@ -45,8 +60,8 @@ public class ArmyExtent {
     }
 
     public long getToTime() {
-        return getFromTime() + Math.round(GameDescription.LATEST_INSTANCE.getPlanet(fromPlanet).distance(
-                GameDescription.LATEST_INSTANCE.getPlanet(toPlanet)) * GameDescription.LATEST_INSTANCE.getMovementSpeed() / 1000);
+        return getFromTime() + (long) Math.ceil(GameDescription.LATEST_INSTANCE.getPlanet(fromPlanet).distance(
+                GameDescription.LATEST_INSTANCE.getPlanet(toPlanet)) / GameDescription.LATEST_INSTANCE.getMovementSpeed() * 1000);
     }
 
     @Override
