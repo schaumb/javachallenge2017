@@ -22,7 +22,6 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
     private Move move = new Move().setMoveFrom(-1).setMoveTo(-1);
     private JFrame frame;
     private Consumer<Move> consumer;
-    private GameDescription gameDescription;
     private GameState currGameState;
 
     @Override
@@ -32,7 +31,6 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
 
     @Override
     public void setGameDescription(GameDescription gameDescription) {
-        this.gameDescription = gameDescription;
         frame = new MyFrame(new Dimension(gameDescription.getMapSizeX(), gameDescription.getMapSizeY()));
         frame.revalidate();
         frame.repaint();
@@ -61,9 +59,9 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
         g.setColor(Color.WHITE);
         g.fill(g.getDeviceConfiguration().getBounds());
 
-        if (gameDescription != null) {
+        if (GameDescription.LATEST_INSTANCE != null) {
             if (currGameState == null) {
-                for (Planet planet : gameDescription.getPlanets()) {
+                for (Planet planet : GameDescription.LATEST_INSTANCE.getPlanets()) {
                     g.setColor(Color.GRAY);
                     g.fillArc(planet.getX() - planet.getRadius(), planet.getY() - planet.getRadius(),
                             planet.getRadius() * 2, planet.getRadius() * 2, 0, 360);
@@ -112,6 +110,7 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
 
     @Override
     public void mouseClicked(MouseEvent mouseEvent) {
+        GameDescription gameDescription = GameDescription.LATEST_INSTANCE;
         if (gameDescription != null) {
             Optional<Planet> first = gameDescription.getPlanets()
                     .stream().filter(p -> p.distance(new Positioned<>(mouseEvent.getX(), mouseEvent.getY())) < p.getRadius())

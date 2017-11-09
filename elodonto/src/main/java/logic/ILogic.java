@@ -17,7 +17,7 @@ public interface ILogic extends AutoCloseable {
 
     void setMessageConsumer(Consumer<Move> consumer);
 
-    void setGameDescription(GameDescription gameDescription);
+    default void setGameDescription(GameDescription gameDescription) {}
 
     void setGameState(GameState gameState);
 
