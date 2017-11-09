@@ -5,6 +5,7 @@ import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public class PlanetState implements IOwned {
     private int planetID;
@@ -37,6 +38,27 @@ public class PlanetState implements IOwned {
 
     public List<Army> getStationedArmies() {
         return stationedArmies;
+    }
+
+    public Army getOurStationedArmy() {
+        return stationedArmies.stream()
+                .filter(Army::isOurs)
+                .findFirst().orElse(null);
+    }
+
+    public Stream<Army> getEnemyStationedArmies() {
+        return stationedArmies.stream()
+                .filter(a -> !a.isOurs());
+    }
+
+    public Stream<Army> getOurMovingArmies() {
+        return movingArmies.stream()
+                .filter(Army::isOurs);
+    }
+
+    public Stream<Army> getEnemyMovingArmies() {
+        return movingArmies.stream()
+                .filter(a -> !a.isOurs());
     }
 
     @Override

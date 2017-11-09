@@ -95,7 +95,7 @@ public class PlanetExtent {
         return interruptionTime;
     }
 
-    public long getCreatedArmiesTimeWithoutInterrupt(int armySize) {
+    public long getTimeWhenCreatedArmiesWithoutInterrupt(int armySize) {
         if (getState() != CurrentState.UNIT_CREATE)
             return -1;
 
@@ -108,6 +108,21 @@ public class PlanetExtent {
                     gameDescription.getUnitCreateSpeed() * gameDescription.getInternalSchedule() / 1000;
         }
         return currentTime;
+    }
+
+    public int getCreatedArmiesCountAtTimeWithoutInterrupt(long atTime) {
+        if (getState() != CurrentState.UNIT_CREATE)
+            return -1;
+
+        GameDescription gameDescription = GameDescription.LATEST_INSTANCE;
+        double currentSize = getPlanetState().getStationedArmies().get(0).getSize();
+        long currentTime = gameDescription.getCurrentTime();
+        while (currentTime < atTime) {
+            currentTime += gameDescription.getInternalSchedule();
+            currentSize += Math.pow(getPlanetState().getAsPlanet().getRadius(), gameDescription.getPlanetExponent()) *
+                    gameDescription.getUnitCreateSpeed() * gameDescription.getInternalSchedule() / 1000;
+        }
+        return (int) currentSize;
     }
 
     public enum CurrentState {

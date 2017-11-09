@@ -8,6 +8,7 @@ import logic.ILogic;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class GameState {
     private List<PlanetState> planetStates;
@@ -39,6 +40,12 @@ public class GameState {
         return new PlanetExtent(GameDescription.LATEST_INSTANCE, this, state);
     }
 
+    public PlanetExtent getPlanetExtent(int id) {
+        PlanetState planetState = getPlanetState(id);
+        return planetState == null ? null : getPlanetExtent(planetState);
+    }
+
+
     private PlayerState getPlayerState(String id) {
         return getStandings().stream()
                 .filter(p -> Objects.equals(p.getUserID(), id))
@@ -47,6 +54,19 @@ public class GameState {
 
     public PlayerState getOurState() {
         return getPlayerState(ILogic.OUR_TEAM);
+    }
+
+    public Stream<PlanetExtent> getOurStationedArmiedExtentPlanetStates() {
+        return getPlanetStates().stream()
+                .filter(planetStates -> planetStates.getStationedArmies().stream().anyMatch(Army::isOurs))
+                .map(this::getPlanetExtent);
+    }
+
+    public Stream<ArmyExtent> getOurMovingExtentArmy() {
+        return getPlanetStates().stream()
+                .flatMap(s -> s.getMovingArmies().stream())
+                .filter(Army::isOurs)
+                .map(this::getArmyExtent);
     }
 
     public PlanetState getPlanetState(int id) {
