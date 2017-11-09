@@ -40,15 +40,11 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
         if (firstMessage) {
             GameDescription gameDescription = gson.fromJson(message, GameDescription.class);
             LOG.fine("Consumed message as description: " + gameDescription);
+            GameDescription.GAME_STARTED_MS = System.currentTimeMillis();
             logic.setGameDescription(gameDescription);
             firstMessage = false;
         } else {
             GameState gameState = gson.fromJson(message, GameState.class);
-            if (gameState.getTimeElapsed() == 0) {
-                GameDescription.GAME_STARTED_MS = System.currentTimeMillis();
-            } else if (GameDescription.GAME_STARTED_MS == -1) {
-                GameDescription.GAME_STARTED_MS = System.currentTimeMillis() - gameState.getTimeElapsed();
-            }
             LOG.fine("Consumed message as state: " + gameState);
             logic.setGameState(gameState);
         }

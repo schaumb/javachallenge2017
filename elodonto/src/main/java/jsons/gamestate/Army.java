@@ -22,6 +22,16 @@ public class Army extends Positioned<Double> implements IOwned {
         return size;
     }
 
+    public Army setOwner(String owner) {
+        this.owner = owner;
+        return this;
+    }
+
+    public Army setSize(int size) {
+        this.size = size;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
