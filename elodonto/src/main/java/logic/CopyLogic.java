@@ -17,7 +17,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class CopyLogic implements ILogic, Runnable {
@@ -28,7 +27,6 @@ public class CopyLogic implements ILogic, Runnable {
     private MoveState prev;
     private MoveState now = new MoveState();
     private MoveState best = new MoveState();
-    private Consumer<Move> consumer;
     private GameState currGameState;
     private long startMS;
     private boolean notFromStart = true;
@@ -54,11 +52,6 @@ public class CopyLogic implements ILogic, Runnable {
             best = new MoveState();
 
         System.err.println(prev);
-    }
-
-    @Override
-    public void setMessageConsumer(Consumer<Move> consumer) {
-        this.consumer = consumer;
     }
 
     @Override
@@ -169,11 +162,11 @@ public class CopyLogic implements ILogic, Runnable {
             } else {
                 System.err.println("Can not make move, not has army: " + d);
             }
-            consumer.accept(new Move().setArmySize(d.getArmy().getSize()).setMoveFrom(
+            new Move().setArmySize(d.getArmy().getSize()).setMoveFrom(
                     fromPlanetID
             ).setMoveTo(
                     transformer.apply(d.getToPlanet())
-            ));
+            ).send();
         }
     }
 

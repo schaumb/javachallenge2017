@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 
 public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<String>, Consumer<Move> {
     private final static Logger LOG = Logger.getLogger(ClientEndpoint.class.getName());
+    public static Consumer<Move> sender;
     private Session session;
     private boolean firstMessage = true;
     private Gson gson = new GsonBuilder().create();
@@ -24,6 +25,7 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
     public void onOpen(Session session, EndpointConfig config) {
         session.addMessageHandler(this);
         this.session = session;
+        sender = this;
         logic.setMessageConsumer(this);
     }
 

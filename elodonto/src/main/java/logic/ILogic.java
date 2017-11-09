@@ -15,9 +15,11 @@ public interface ILogic extends AutoCloseable {
         return new GuiLogic().collapse(new CopyLogic());
     }
 
-    void setMessageConsumer(Consumer<Move> consumer);
+    default void setMessageConsumer(Consumer<Move> consumer) {
+    }
 
-    default void setGameDescription(GameDescription gameDescription) {}
+    default void setGameDescription(GameDescription gameDescription) {
+    }
 
     void setGameState(GameState gameState);
 

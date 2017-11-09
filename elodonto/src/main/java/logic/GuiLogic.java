@@ -16,18 +16,11 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
     private Move move = new Move().setMoveFrom(-1).setMoveTo(-1);
     private JFrame frame;
-    private Consumer<Move> consumer;
     private GameState currGameState;
-
-    @Override
-    public void setMessageConsumer(Consumer<Move> consumer) {
-        this.consumer = consumer;
-    }
 
     @Override
     public void setGameDescription(GameDescription gameDescription) {
@@ -132,7 +125,7 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                     LOG.warning("Min moveable army: " + gameDescription.getMinMovableArmySize() + " sent army: " + move.getArmySize() + " set to min");
                     move.setArmySize(gameDescription.getMinMovableArmySize());
                 }
-                consumer.accept(move);
+                move.send();
                 move.setMoveFrom(-1).setMoveTo(-1);
             }
         }

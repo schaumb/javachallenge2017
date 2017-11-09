@@ -1,5 +1,7 @@
 package jsons;
 
+import wsimpl.ClientEndpoint;
+
 public class Move {
     private int moveFrom;
     private int moveTo;
@@ -30,6 +32,10 @@ public class Move {
     public Move setArmySize(int armySize) {
         this.armySize = armySize;
         return this;
+    }
+
+    public void send() {
+        ClientEndpoint.sender.accept(this);
     }
 
     @Override
