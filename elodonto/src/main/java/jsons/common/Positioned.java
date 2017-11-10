@@ -21,12 +21,27 @@ public class Positioned<T extends Number> {
                                 (p1.getX().doubleValue() - p2.getX().doubleValue()));
     }
 
+    public Positioned<Double> goesTo(Positioned<T> oth, double percent) {
+        return new Positioned<>(this.getX().doubleValue() + (oth.getX().doubleValue() - this.getX().doubleValue()) * percent,
+                this.getY().doubleValue() + (oth.getY().doubleValue() - this.getY().doubleValue()) * percent);
+    }
+
     public T getX() {
         return x;
     }
 
+    public Positioned<T> setX(T x) {
+        this.x = x;
+        return this;
+    }
+
     public T getY() {
         return y;
+    }
+
+    public Positioned<T> setY(T y) {
+        this.y = y;
+        return this;
     }
 
     public <U extends Number> double distance(Positioned<U> other) {

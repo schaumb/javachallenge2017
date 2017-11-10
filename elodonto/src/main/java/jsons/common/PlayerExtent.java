@@ -9,22 +9,23 @@ public class PlayerExtent {
     private final long currentPossibleScore;
     private final CurrentState currentState;
 
-    public PlayerExtent(GameDescription gameDescription, GameState gameState, PlayerState playerState) {
+    public PlayerExtent(long time, GameState gameState, PlayerState playerState) {
         this.playerState = playerState;
 
         long possibleScore;
         CurrentState state;
+        GameDescription game = GameDescription.LATEST_INSTANCE;
         if (gameState.getPlanetStates().stream().allMatch(p -> p.isOwns(playerState.getUserID()))  // elfoglalta az összes bolygót
                 || gameState.getStandings().stream().mapToInt(PlayerState::getStrength).sum() == playerState.getStrength()) // kiejtette a többi játékost
         {
             state = CurrentState.WON;
-            possibleScore = 2000 + gameDescription.getRemainingTime() * 1000 / gameDescription.getGameLength();
+            possibleScore = 2000 + (game.getGameLength() - time) * 1000 / game.getGameLength();
         } else if (playerState.getStrength() == 0) {
             // TODO NEM ÁLLJA MEG AZ IGAZSÁGOT -> gameDescriotion.getCurrentTime() nem a kiesés ideje, de 1v1-nél oké
-            possibleScore = gameDescription.getCurrentTime() * 1000 / gameDescription.getGameLength();
+            possibleScore = time * 1000 / game.getGameLength();
             state = CurrentState.DEAD;
         } else {
-            possibleScore = gameDescription.getCurrentTime() * 1000 / gameDescription.getGameLength() +
+            possibleScore = time * 1000 / game.getGameLength() +
                     playerState.getStrength() * 1000 / gameState.getStandings().stream().mapToInt(PlayerState::getStrength).sum();
             state = CurrentState.FIGHTS;
         }

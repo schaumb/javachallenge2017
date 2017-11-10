@@ -52,6 +52,10 @@ public class GameDescription {
         return Math.max(0, Math.min(getGameLength(), System.currentTimeMillis() - GameDescription.GAME_STARTED_MS));
     }
 
+    public long getCurrentTick() {
+        return getTickFromTime(getCurrentTime());
+    }
+
     public long getRemainingTime() {
         return getGameLength() - getCurrentTime();
     }
@@ -187,5 +191,9 @@ public class GameDescription {
                 ", planets=" + planets +
                 ", players=" + players +
                 '}';
+    }
+
+    public long getTickFromTime(long time) {
+        return time / getBroadcastSchedule();
     }
 }

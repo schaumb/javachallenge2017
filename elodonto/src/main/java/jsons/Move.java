@@ -1,6 +1,14 @@
 package jsons;
 
+import com.google.gson.Gson;
+import jsons.common.Positioned;
+import jsons.gamestate.Army;
+import jsons.gamestate.GameState;
+import jsons.gamestate.PlanetState;
+import wsimpl.ClientEndpoint;
+
 public class Move {
+    private final static Gson gson = new Gson();
     private int moveFrom;
     private int moveTo;
     private int armySize;
@@ -30,6 +38,35 @@ public class Move {
     public Move setArmySize(int armySize) {
         this.armySize = armySize;
         return this;
+    }
+
+    public void send() {
+        ClientEndpoint.sender.accept(this);
+    }
+
+    public GameState sendAndRefreshGameState(GameState gameState) {
+        GameState cp = gson.fromJson(gson.toJson(gameState), GameState.class);
+        PlanetState planetStateFrom = cp.getPlanetState(moveFrom);
+        PlanetState planetStateTo = cp.getPlanetState(moveTo);
+        Army ourStationedArmy = planetStateFrom.getOurStationedArmy();
+        int sentProbably = Math.min(ourStationedArmy.getSize(), armySize);
+
+        if (ourStationedArmy.getSize() == sentProbably) {
+            planetStateFrom.getStationedArmies().remove(ourStationedArmy);
+        } else {
+            ourStationedArmy.setSize(ourStationedArmy.getSize() - sentProbably);
+        }
+        Positioned<Double> doublePositioned = planetStateFrom.getAsPlanet().goesTo(planetStateTo.getAsPlanet(), 0.01);
+
+        Army army = new Army();
+        army.setOwner(ourStationedArmy.getOwner())
+                .setSize(sentProbably)
+                .setX(doublePositioned.getX())
+                .setY(doublePositioned.getY());
+
+        planetStateTo.getMovingArmies().add(army);
+
+        return cp;
     }
 
     @Override

@@ -18,8 +18,18 @@ public class Army extends Positioned<Double> implements IOwned {
         return owner;
     }
 
+    public Army setOwner(String owner) {
+        this.owner = owner;
+        return this;
+    }
+
     public int getSize() {
         return size;
+    }
+
+    public Army setSize(int size) {
+        this.size = size;
+        return this;
     }
 
     @Override
