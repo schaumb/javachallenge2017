@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Helper {
-    public static long timeToMove(Positioned<Number> from, Positioned<Number> to) {
+    public static <T extends Number, U extends Number> long timeToMove(Positioned<T> from, Positioned<U> to) {
         return (long) Math.ceil(from.distance(to) / GameDescription.LATEST_INSTANCE.getMovementSpeed() * 1000);
     }
 
@@ -70,11 +70,15 @@ public class Helper {
         return collect;
     }
 
-    public int timeToTick(long time) {
+    public static int timeToTick(long time) {
         return (int) time / GameDescription.LATEST_INSTANCE.getBroadcastSchedule();
     }
 
-    public long tickToTime(int tick) {
+    public static long tickToTime(int tick) {
         return tick * GameDescription.LATEST_INSTANCE.getBroadcastSchedule();
+    }
+
+    public static double planetWeight(int radius, double amount) {
+        return amount * Math.pow(radius, GameDescription.LATEST_INSTANCE.getPlanetExponent());
     }
 }

@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import jsons.Move;
 import jsons.common.ArmyExtent;
+import jsons.common.Helper;
 import jsons.common.PlanetExtent;
 import jsons.common.PlayerExtent;
 import jsons.gamedesc.GameDescription;
@@ -181,29 +182,38 @@ public class LearningAlgorithm implements ILogic {
     }
 
     private Comparator<StateIndices> getSorter(PlanetExtent planetExtent) {
-        Stream<ToDoubleFunction<StateIndices>> buntik = Stream.of(
-                StateIndices::getWeight,
-                i -> (i.toPlanets.size() - 1) / 9.0 / 5 + 0.9,
-                i -> (i.toPlanets.keySet().stream()
-                        .map(currentGameState::getPlanetState)
-                        .map(PlanetState::getAsPlanet)
-                        .filter(p -> p.getPlanetID() != planetExtent.getPlanetState().getPlanetID())
-                        .mapToDouble(p -> p.distance(planetExtent.getPlanetState().getAsPlanet()))
-                        .max().orElse(161) - 161) / 800.0 / 5 + 0.9
-        );
+        List<ToDoubleFunction<StateIndices>> buntik = new ArrayList<>(Arrays.asList(
+                StateIndices::getWeight
+                , i -> 1 / i.toPlanets.entrySet().stream().mapToDouble(e -> {
+                    PlanetExtent toPlanetExtent = currentGameState.getPlanetExtent(e.getKey());
+                    PlanetState toPlanetState = toPlanetExtent.getPlanetState();
+                    Planet toPlanet = toPlanetState.getAsPlanet();
 
-        ToDoubleFunction<StateIndices> reduce = buntik.reduce(i -> 1.0, (a, b) -> x -> a.applyAsDouble(x) * b.applyAsDouble(x));
-        switch (planetExtent.getState()) {
-            case BATTLE:
+                    long timeToMove = Helper.timeToMove(planetExtent.getPlanetState().getAsPlanet(), toPlanet);
 
-                break;
-            case CAPTURE:
-                break;
-            case UNIT_CREATE:
-                break;
-            default:
+                    int enemySize = toPlanetState.getEnemyStationedArmies()
+                            .mapToInt(Army::getSize).sum();
+                    // TODO hozzáadni a mozgással töltött idő alatt odamenő, illetve generálódó enemyket
 
-        }
+                    boolean owns = toPlanetState.isOwns(OUR_TEAM);
+                    double amount = toPlanetState.getOwnershipRatio();
+                    // TODO genrálni az odamozgásra keletkező cuccokat
+
+                    if(enemySize > e.getValue()) { //  nem éri meg ??
+                        return Double.MIN_VALUE;
+                    }
+
+                    double got = owns && amount == 1.0 ? Double.MIN_VALUE : Helper.planetWeight(toPlanet.getRadius(), 1) // got toPlanet
+                            ; // TODO kill enemy ???
+
+                    long timeToKill = Helper.timeToKillSomeone(Arrays.asList(e.getValue(), enemySize));
+
+                    long timeToCapture = Helper.timeToCapture(toPlanet.getRadius(), e.getValue(), owns, amount);
+
+                    return got / (timeToMove + timeToKill + timeToCapture);
+                }).sum()));
+
+        ToDoubleFunction<StateIndices> reduce = buntik.stream().reduce(i -> 1.0, (a, b) -> x -> a.applyAsDouble(x) * b.applyAsDouble(x));
         return Comparator.comparingDouble(reduce);
     }
 
