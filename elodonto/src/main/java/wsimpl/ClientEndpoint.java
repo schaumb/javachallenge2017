@@ -8,6 +8,7 @@ import jsons.gamestate.GameState;
 import logic.ILogic;
 
 import javax.websocket.*;
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,6 +16,7 @@ import java.util.logging.Logger;
 public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<String>, Consumer<Move> {
     private final static Logger LOG = Logger.getLogger(ClientEndpoint.class.getName());
     public static Consumer<Move> sender;
+    public static Callable<Void> closer;
     private Session session;
     private boolean firstMessage = true;
     private Gson gson = new GsonBuilder().create();
@@ -26,6 +28,10 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
         session.addMessageHandler(this);
         this.session = session;
         sender = this;
+        closer = () -> {
+            session.close();
+            return null;
+        };
         logic.setMessageConsumer(this);
     }
 

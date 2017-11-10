@@ -13,7 +13,8 @@ public class ArmyExtent {
     private final int fromPlanet;
     private final int toPlanet;
 
-    public ArmyExtent(GameDescription gameDescription, GameState gameState, Army army) {
+    public ArmyExtent(GameState gameState, Army army) {
+        GameDescription gameDescription = GameDescription.LATEST_INSTANCE;
         Planet toPlanet = gameState.getArmyPlanetState(army).getAsPlanet();
         int timeElapsed = gameState.getTimeElapsed();
         Planet planet = army.isInMove() ? gameDescription.getPlanets()
@@ -71,12 +72,13 @@ public class ArmyExtent {
 
         ArmyExtent that = (ArmyExtent) o;
 
-        return fromTime == that.fromTime && fromPlanet == that.fromPlanet && toPlanet == that.toPlanet && (army != null ? army.equals(that.army) : that.army == null);
+        return fromTime == that.fromTime && fromPlanet == that.fromPlanet && toPlanet == that.toPlanet && (army == that.army ||
+                (army != null && that.army != null && army.getSize() == that.army.getSize()));
     }
 
     @Override
     public int hashCode() {
-        int result = army != null ? army.hashCode() : 0;
+        int result = army != null ? army.getSize() : 0;
         result = 31 * result + (int) (fromTime ^ (fromTime >>> 32));
         result = 31 * result + fromPlanet;
         result = 31 * result + toPlanet;
@@ -85,7 +87,7 @@ public class ArmyExtent {
 
     @Override
     public String toString() {
-        return "\nArmyExtent{" +
+        return "ArmyExtent{" +
                 "army=" + army +
                 ", fromTime=" + fromTime +
                 ", fromPlanet=" + fromPlanet +

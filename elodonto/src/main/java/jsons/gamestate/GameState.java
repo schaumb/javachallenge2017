@@ -3,7 +3,6 @@ package jsons.gamestate;
 import jsons.common.ArmyExtent;
 import jsons.common.PlanetExtent;
 import jsons.common.PlayerExtent;
-import jsons.gamedesc.GameDescription;
 import logic.ILogic;
 
 import java.util.List;
@@ -29,15 +28,15 @@ public class GameState {
     }
 
     public ArmyExtent getArmyExtent(Army army) {
-        return new ArmyExtent(GameDescription.LATEST_INSTANCE, this, army);
+        return new ArmyExtent(this, army);
     }
 
     public PlayerExtent getPlayerExtent(PlayerState state) {
-        return new PlayerExtent(GameDescription.LATEST_INSTANCE, this, state);
+        return new PlayerExtent(getTimeElapsed(), this, state);
     }
 
     public PlanetExtent getPlanetExtent(PlanetState state) {
-        return new PlanetExtent(GameDescription.LATEST_INSTANCE, this, state);
+        return new PlanetExtent(getTimeElapsed(), this, state);
     }
 
     public PlanetExtent getPlanetExtent(int id) {
@@ -69,6 +68,20 @@ public class GameState {
                 .map(this::getArmyExtent);
     }
 
+    public Stream<ArmyExtent> getMovingExtentArmy(String owns) {
+        return getPlanetStates().stream()
+                .flatMap(s -> s.getMovingArmies().stream())
+                .filter(a -> a.isOwns(owns))
+                .map(this::getArmyExtent);
+    }
+
+    public Stream<ArmyExtent> getEnemiesMovingExtentArmy() {
+        return getPlanetStates().stream()
+                .flatMap(s -> s.getMovingArmies().stream())
+                .filter(a -> !a.isOurs())
+                .map(this::getArmyExtent);
+    }
+
     public PlanetState getPlanetState(int id) {
         return getPlanetStates().stream()
                 .filter(p -> p.getPlanetID() == id)
@@ -81,6 +94,10 @@ public class GameState {
 
     public List<PlayerState> getStandings() {
         return standings;
+    }
+
+    public Stream<PlayerState> getEnemies() {
+        return getStandings().stream().filter(e -> !e.getAsPlayer().isUs());
     }
 
     public GameStatus getGameStatus() {
@@ -105,4 +122,19 @@ public class GameState {
                 ", remainingPlayers=" + remainingPlayers +
                 '}';
     }
+
+    public Stream<PlanetExtent> getStationedArmiedExtentPlanetStates(String who) {
+        return getPlanetStates().stream()
+                .filter(planetStates -> planetStates.getStationedArmies().stream().anyMatch(a -> Objects.equals(a.getOwner(), who)))
+                .map(this::getPlanetExtent);
+    }
+
+    public int getAllArmy(String owner) {
+        return getPlanetStates()
+                .stream().flatMap(s -> Stream.concat(
+                        s.getMovingArmies(owner),
+                        Stream.of(s.getStationedArmy(owner))
+                )).mapToInt(Army::getSize).sum();
+    }
+
 }

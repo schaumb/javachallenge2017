@@ -12,7 +12,7 @@ public interface ILogic extends AutoCloseable {
     String OUR_TEAM = "overload";
 
     static ILogic createLogic() {
-        return new GuiLogic().collapse(new CopyLogic());
+        return LearningAlgorithm.THE_LEARNING_ALGORITHM.collapse(new GuiLogic());
     }
 
     default void setMessageConsumer(Consumer<Move> consumer) {

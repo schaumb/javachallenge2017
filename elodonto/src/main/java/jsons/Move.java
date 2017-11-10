@@ -8,6 +8,7 @@ import jsons.gamestate.PlanetState;
 import wsimpl.ClientEndpoint;
 
 public class Move {
+    private final static Gson gson = new Gson();
     private int moveFrom;
     private int moveTo;
     private int armySize;
@@ -43,8 +44,6 @@ public class Move {
         ClientEndpoint.sender.accept(this);
     }
 
-    private final static Gson gson = new Gson();
-
     public GameState sendAndRefreshGameState(GameState gameState) {
         GameState cp = gson.fromJson(gson.toJson(gameState), GameState.class);
         PlanetState planetStateFrom = cp.getPlanetState(moveFrom);
@@ -52,7 +51,7 @@ public class Move {
         Army ourStationedArmy = planetStateFrom.getOurStationedArmy();
         int sentProbably = Math.min(ourStationedArmy.getSize(), armySize);
 
-        if(ourStationedArmy.getSize() == sentProbably) {
+        if (ourStationedArmy.getSize() == sentProbably) {
             planetStateFrom.getStationedArmies().remove(ourStationedArmy);
         } else {
             ourStationedArmy.setSize(ourStationedArmy.getSize() - sentProbably);

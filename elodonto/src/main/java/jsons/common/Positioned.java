@@ -12,16 +12,6 @@ public class Positioned<T extends Number> {
         this.y = y;
     }
 
-    public Positioned<T> setX(T x) {
-        this.x = x;
-        return this;
-    }
-
-    public Positioned<T> setY(T y) {
-        this.y = y;
-        return this;
-    }
-
     static <X extends Number, Y extends Number, Z extends Number> double collinears(
             Positioned<X> p1, Positioned<Y> p2, Positioned<Z> p3) {
         return Math.abs(
@@ -40,8 +30,18 @@ public class Positioned<T extends Number> {
         return x;
     }
 
+    public Positioned<T> setX(T x) {
+        this.x = x;
+        return this;
+    }
+
     public T getY() {
         return y;
+    }
+
+    public Positioned<T> setY(T y) {
+        this.y = y;
+        return this;
     }
 
     public <U extends Number> double distance(Positioned<U> other) {
