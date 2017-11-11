@@ -128,7 +128,7 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                     LOG.warning("Min moveable army: " + gameDescription.getMinMovableArmySize() + " sent army: " + move.getArmySize() + " set to min");
                     move.setArmySize(gameDescription.getMinMovableArmySize());
                 }
-                move.send();
+                move.send(OUR_TEAM);
                 move.setMoveFrom(-1).setMoveTo(-1);
             }
         }

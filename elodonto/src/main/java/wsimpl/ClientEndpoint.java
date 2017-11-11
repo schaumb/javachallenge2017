@@ -13,11 +13,12 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<String>, Consumer<Move> {
+public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<String>, BiConsumer<Move, String> {
     private final static Logger LOG = Logger.getLogger(ClientEndpoint.class.getName());
     private Session session;
     private boolean firstMessage = true;
@@ -96,7 +97,7 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
     }
 
     @Override
-    public void accept(Move move) {
+    public void accept(Move move, String string) {
         String s = gson.toJson(move);
         LOG.fine("Send move message: " + move + " as Json: " + s);
         session.getAsyncRemote().sendText(s);

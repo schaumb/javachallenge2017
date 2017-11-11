@@ -6,6 +6,7 @@ import jsons.common.*;
 import jsons.gamedesc.GameDescription;
 import logic.ILogic;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -158,8 +159,20 @@ public class GameState {
                         s.getStationedArmy(owner) == null ? Stream.empty() : Stream.of(s.getStationedArmy(owner))
                 )).mapToInt(Army::getSize).sum();
     }
+    private static final HashMap<Integer, HashMap<String, Stream<Move>>> delayedMoves = new HashMap<>();
 
-    public GameState setMove(Stream<Move> moves) {
+    public GameState setDelayedMove(Stream<Move> moves, String owner, int plusTick) {
+        delayedMoves.computeIfAbsent(getTickElapsed() + plusTick, i -> new HashMap<>())
+                .compute(owner, (o, prev) -> {
+                    if(prev == null)
+                        return moves;
+
+                    return Stream.concat(prev, moves);
+                });
+        return this;
+    }
+
+    public GameState setMove(Stream<Move> moves, String owner) {
         GameDescription game = GameDescription.LATEST_INSTANCE;
         moves.forEach(move -> {
             if (move.getMoveFrom() == move.getMoveTo())
@@ -167,17 +180,14 @@ public class GameState {
 
             PlanetState planetStateFrom = getPlanetState(move.getMoveFrom());
             PlanetState planetStateTo = getPlanetState(move.getMoveTo());
-            Army ourStationedArmy = planetStateFrom.getOurStationedArmy();
+            Army ourStationedArmy = planetStateFrom.getStationedArmy(owner);
             if (ourStationedArmy == null)
                 return;
 
             int sentProbably = Math.min(ourStationedArmy.getSize(), move.getArmySize());
 
-            if (ourStationedArmy.getSize() == sentProbably && (ourStationedArmy.getRealSize() - ourStationedArmy.getSize()) == 0) {
-                planetStateFrom.getStationedArmies().remove(ourStationedArmy);
-            } else {
-                ourStationedArmy.setSize(ourStationedArmy.getRealSize() - sentProbably);
-            }
+            ourStationedArmy.setSize(ourStationedArmy.getRealSize() - sentProbably);
+
             double time = Helper.timeToMoveWithoutCeil(planetStateFrom.getAsPlanet(), planetStateTo.getAsPlanet());
             Positioned<Double> doublePositioned = planetStateFrom.getAsPlanet().goesTo(planetStateTo.getAsPlanet(),
                     -(game.getBroadcastSchedule() - game.getInternalSchedule()) / time);
@@ -222,6 +232,10 @@ public class GameState {
         int deltatime = (int) Helper.tickToTime(1);
         setTimeElapsed(getTimeElapsed() + deltatime);
 
+        delayedMoves.getOrDefault(getTickElapsed(), new HashMap<>())
+                .forEach((k ,v) -> {
+                    setMove(v, k);
+                });
 
         // mozgó seregek
         List<ArmyExtent> armyExtentList = getMovingExtentArmies().collect(Collectors.toList());

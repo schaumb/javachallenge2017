@@ -17,9 +17,11 @@ import jsons.gamestate.PlayerState;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class LearningAlgorithm implements ILogic {
@@ -163,22 +165,41 @@ public class LearningAlgorithm implements ILogic {
                         System.err.println(possibles.size());
 
                         possibles.sort(getSorter());
+/*
+                        long startTime = System.currentTimeMillis();
+                        System.err.println("Creates possibilities");
+                        Stream<StateIndices> possibles = createPossibles(tick, size, planetID, size,
+                                game.getPlanetIDs().toArray(), 0, 2);
+                        System.err.println("End created possibles took ms: " + (System.currentTimeMillis() - startTime));
 
+                        startTime = System.currentTimeMillis();
+                        System.err.println("Sorting...");
+                        possibles = possibles.sorted(getSorter());
+                        System.err.println("Sorting took ms: " + (System.currentTimeMillis() - startTime));
+*/
 
-                        System.err.println("Tick: " + tick + ", From: " + planetID + ", Units: " + size);
+                        /*System.err.println("Tick: " + tick + ", From: " + planetID + ", Units: " + size);
                         AtomicInteger nTh = new AtomicInteger(0);
                         possibles.stream()
                                 .limit(10)
                                 .forEach(p -> {
                                     System.err.println(nTh.getAndIncrement() + ".th: \n" + p.getString());
-                                });
+                                });*/
 
                         StateIndices state = possibles.get(0);
 
                         state.setWeight(1.0);
 
-                        state.moves().forEach(Move::send);
+                        state.moves().forEach(m -> m.send(OUR_TEAM));
+/*
+                        System.err.println("Get first...");
+                        StateIndices state = possibles.findFirst().get();
+                        System.err.println("Get first took ms: " + (System.currentTimeMillis() - startTime));
 
+                        state.setWeight(1.0);
+
+                        state.moves().forEach(m -> m.send(OUR_TEAM));
+*/
                     });
 
             prevGameState = currentGameState;
@@ -188,14 +209,14 @@ public class LearningAlgorithm implements ILogic {
                     .skip(1).findFirst().ifPresent(planetTo ->
                     new Move().setArmySize(Integer.MAX_VALUE)
                             .setMoveFrom(planetFromUp.getPlanetID())
-                            .setMoveTo(planetTo.getPlanetID()).send());
+                            .setMoveTo(planetTo.getPlanetID()).send(OUR_TEAM));
 
             Planet planetFromDown = game.getPlanet(102);
             game.getPlanets().stream().sorted(Comparator.comparingDouble(planetFromDown::distance))
                     .skip(1).findFirst().ifPresent(planetTo ->
                     new Move().setArmySize(Integer.MAX_VALUE)
                             .setMoveFrom(planetFromDown.getPlanetID())
-                            .setMoveTo(planetTo.getPlanetID()).send());
+                            .setMoveTo(planetTo.getPlanetID()).send(OUR_TEAM));
         }
     }
 
@@ -207,7 +228,7 @@ public class LearningAlgorithm implements ILogic {
                 i -> {
                     final StringBuilder builder = new StringBuilder();
 
-                    GameState copy = currentGameState.copy().setMove(i.moves());
+                    GameState copy = currentGameState.copy().setMove(i.moves(), OUR_TEAM);
                     Planet from = game.getPlanet(i.getFrom());
 
                     double res = 1 / i.toPlanets.entrySet().stream().mapToDouble(e -> {
@@ -276,6 +297,34 @@ public class LearningAlgorithm implements ILogic {
 
         return possibles;
     }
+/*
+    private Stream<StateIndices> createPossibles(int tick, int all, int fromPlanet, int size, int[] planetIndices, int from, int maxSplit) {
+        int minMovableArmySize = GameDescription.LATEST_INSTANCE.getMinMovableArmySize();
+
+        Stream<StateIndices> possibles = Stream.empty();
+        if (size > 0) {
+            StateIndices state = new StateIndices(tick, fromPlanet, all, up, new HashMap<>());
+            state.toPlanets.put(fromPlanet, size);
+            possibles = Stream.of(state);
+
+        }
+
+        if(maxSplit > 0) {
+            possibles = Stream.concat(possibles,
+            IntStream.range(from, planetIndices.length)
+                    .filter(i -> planetIndices[i] != fromPlanet)
+                    .mapToObj(toPlanet ->
+                        IntStream.rangeClosed(minMovableArmySize, size)
+                            .mapToObj(count ->
+                                createPossibles(tick, all, fromPlanet, size - count, planetIndices, toPlanet + 1, maxSplit - 1)
+                            )
+                    ).flatMap(Function.identity())
+                    .flatMap(Function.identity())).parallel();
+        }
+
+        return possibles;
+    }
+    */
 
     static class MoveState {
         private final HashMap<Integer, // toPlanet

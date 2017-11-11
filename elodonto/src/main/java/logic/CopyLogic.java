@@ -166,7 +166,7 @@ public class CopyLogic implements ILogic, Runnable {
                     fromPlanetID
             ).setMoveTo(
                     transformer.apply(d.getToPlanet())
-            ).send();
+            ).send(OUR_TEAM);
         }
     }
 

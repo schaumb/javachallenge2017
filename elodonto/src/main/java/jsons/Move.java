@@ -36,8 +36,8 @@ public class Move {
         return this;
     }
 
-    public void send() {
-        Main.sender.accept(this);
+    public void send(String who) {
+        Main.sender.accept(this, who);
     }
 
     @Override

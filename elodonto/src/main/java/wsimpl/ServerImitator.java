@@ -1,6 +1,7 @@
 package wsimpl;
 
 import com.google.gson.Gson;
+import jsons.Move;
 import jsons.gamedesc.GameDescription;
 import jsons.gamestate.GameState;
 import jsons.gamestate.GameStatus;
@@ -54,10 +55,12 @@ public class ServerImitator {
                             "{\"score\":0,\"strength\":351,\"userID\":\"bot1\"}]}",
                     GameState.class);
     private final Timer timer = new Timer();
-    private GameState curr = firstGameState;
+    private GameState curr = firstGameState.copy().setMove(Stream.of(new Move().setArmySize(50).setMoveFrom(101).setMoveTo(105)), "bot1")
+            .setDelayedMove(Stream.of(new Move().setArmySize(50).setMoveFrom(105).setMoveTo(103)), "bot1", 20)
+            ;
 
     public ServerImitator() {
-        Main.sender = m -> curr.setMove(Stream.of(m));
+        Main.sender = (m, s) -> curr.setMove(Stream.of(m), s);
         Main.endTick = new Runnable() {
             @Override
             public synchronized void run() {

@@ -7,12 +7,13 @@ import logic.LearningAlgorithm;
 
 import javax.websocket.DeploymentException;
 import java.io.IOException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class Main {
     public final static Object o = new Object();
     public static ILogic logic = LearningAlgorithm.THE_LEARNING_ALGORITHM.collapse(new GuiLogic());
-    public static Consumer<Move> sender;
+    public static BiConsumer<Move, String> sender;
     public static Runnable closer = () -> {
         logic.close();
         synchronized (o) {
@@ -25,7 +26,8 @@ public class Main {
     public static void main(String[] args) throws IOException, DeploymentException, InterruptedException {
         while (!o.equals(args)) {
 
-            new ServerImitator();
+            ClientEndpoint.createEndpoint();
+            // new ServerImitator();
 
             synchronized (o) {
                 o.wait();
