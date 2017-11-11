@@ -5,34 +5,53 @@ import com.google.gson.GsonBuilder;
 import jsons.Move;
 import jsons.gamedesc.GameDescription;
 import jsons.gamestate.GameState;
-import logic.ILogic;
 
 import javax.websocket.*;
-import java.util.concurrent.Callable;
+import javax.xml.bind.DatatypeConverter;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<String>, Consumer<Move> {
     private final static Logger LOG = Logger.getLogger(ClientEndpoint.class.getName());
-    public static Consumer<Move> sender;
-    public static Callable<Void> closer;
     private Session session;
     private boolean firstMessage = true;
     private Gson gson = new GsonBuilder().create();
+    private Runnable closer;
 
-    private ILogic logic = ILogic.createLogic();
+    public static Session createEndpoint() throws IOException, DeploymentException {
+        WebSocketContainer webSocket = ContainerProvider.getWebSocketContainer();
+        ClientEndpointConfig.Configurator configurator = new ClientEndpointConfig.Configurator() {
+            @Override
+            public void beforeRequest(Map<String, List<String>> headers) {
+                headers.put("Authorization", Collections.singletonList("Basic " + DatatypeConverter.printBase64Binary("overload:FF76MJ5XlF6YU8HQAqr".getBytes())));
+            }
+        };
+        ClientEndpointConfig config = ClientEndpointConfig.Builder.create().configurator(configurator).build();
+
+        return webSocket.connectToServer(ClientEndpoint.class, config, URI.create("ws://javachallenge.loxon.hu:8080/JavaChallenge2017/websocket"));
+    }
 
     @Override
     public void onOpen(Session session, EndpointConfig config) {
         session.addMessageHandler(this);
         this.session = session;
-        sender = this;
-        closer = () -> {
-            session.close();
-            return null;
+        Main.sender = this;
+        closer = Main.closer;
+        Main.closer = () -> {
+            try {
+                if (session.isOpen()) {
+                    session.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         };
-        logic.setMessageConsumer(this);
     }
 
     @Override
@@ -47,12 +66,12 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
             GameDescription gameDescription = gson.fromJson(message, GameDescription.class);
             LOG.fine("Consumed message as description: " + gameDescription);
             GameDescription.GAME_STARTED_MS = System.currentTimeMillis();
-            logic.setGameDescription(gameDescription);
+            Main.logic.setGameDescription(gameDescription);
             firstMessage = false;
         } else {
             GameState gameState = gson.fromJson(message, GameState.class);
             LOG.fine("Consumed message as state: " + gameState);
-            logic.setGameState(gameState);
+            Main.logic.setGameState(gameState);
         }
     }
 
@@ -60,26 +79,20 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
     public void onClose(Session session, CloseReason closeReason) {
         super.onClose(session, closeReason);
 
-        logic.close();
         LOG.warning("Closed: " + closeReason.getReasonPhrase());
 
-        end();
+        closer.run();
+        Main.closer.run();
     }
 
     @Override
     public void onError(Session session, Throwable thr) {
         super.onError(session, thr);
 
-        logic.close();
         LOG.log(Level.WARNING, "onError", thr);
 
-        end();
-    }
-
-    private void end() {
-        synchronized (Main.o) {
-            Main.o.notifyAll();
-        }
+        closer.run();
+        Main.closer.run();
     }
 
     @Override

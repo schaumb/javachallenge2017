@@ -29,8 +29,18 @@ public class PlanetState implements IOwned {
         return owner;
     }
 
+    public PlanetState setOwner(String owner) {
+        this.owner = owner;
+        return this;
+    }
+
     public double getOwnershipRatio() {
         return ownershipRatio;
+    }
+
+    public PlanetState setOwnershipRatio(double ownershipRatio) {
+        this.ownershipRatio = ownershipRatio;
+        return this;
     }
 
     public List<Army> getMovingArmies() {

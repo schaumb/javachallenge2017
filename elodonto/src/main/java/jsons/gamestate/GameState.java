@@ -1,23 +1,23 @@
 package jsons.gamestate;
 
-import jsons.common.ArmyExtent;
-import jsons.common.PlanetExtent;
-import jsons.common.PlayerExtent;
+import com.google.gson.Gson;
+import jsons.Move;
+import jsons.common.*;
+import jsons.gamedesc.GameDescription;
 import logic.ILogic;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GameState {
+    private static final Gson gson = new Gson();
     private List<PlanetState> planetStates;
-
     private List<PlayerState> standings;
-
     private GameStatus gameStatus;
-
     private int timeElapsed;
-
     private int remainingPlayers;
 
     public PlanetState getArmyPlanetState(Army army) {
@@ -44,6 +44,9 @@ public class GameState {
         return planetState == null ? null : getPlanetExtent(planetState);
     }
 
+    public Stream<PlanetExtent> getPlanetExtents() {
+        return getPlanetStates().stream().map(this::getPlanetExtent);
+    }
 
     private PlayerState getPlayerState(String id) {
         return getStandings().stream()
@@ -62,24 +65,24 @@ public class GameState {
     }
 
     public Stream<ArmyExtent> getOurMovingExtentArmy() {
-        return getPlanetStates().stream()
-                .flatMap(s -> s.getMovingArmies().stream())
-                .filter(Army::isOurs)
-                .map(this::getArmyExtent);
+        return getMovingExtentArmies()
+                .filter(a -> a.getArmy().isOurs());
     }
 
     public Stream<ArmyExtent> getMovingExtentArmy(String owns) {
+        return getMovingExtentArmies()
+                .filter(a -> a.getArmy().isOwns(owns));
+    }
+
+    public Stream<ArmyExtent> getMovingExtentArmies() {
         return getPlanetStates().stream()
                 .flatMap(s -> s.getMovingArmies().stream())
-                .filter(a -> a.isOwns(owns))
                 .map(this::getArmyExtent);
     }
 
     public Stream<ArmyExtent> getEnemiesMovingExtentArmy() {
-        return getPlanetStates().stream()
-                .flatMap(s -> s.getMovingArmies().stream())
-                .filter(a -> !a.isOurs())
-                .map(this::getArmyExtent);
+        return getMovingExtentArmies()
+                .filter(a -> !a.getArmy().isOurs());
     }
 
     public PlanetState getPlanetState(int id) {
@@ -104,12 +107,31 @@ public class GameState {
         return gameStatus;
     }
 
+    public GameState setGameStatus(GameStatus gameStatus) {
+        this.gameStatus = gameStatus;
+        return this;
+    }
+
     public int getTimeElapsed() {
         return timeElapsed;
     }
 
+    private GameState setTimeElapsed(int timeElapsed) {
+        this.timeElapsed = timeElapsed;
+        return this;
+    }
+
+    public int getTickElapsed() {
+        return Helper.timeToTick(timeElapsed);
+    }
+
     public int getRemainingPlayers() {
         return remainingPlayers;
+    }
+
+    private GameState setRemainingPlayers(int remainingPlayers) {
+        this.remainingPlayers = remainingPlayers;
+        return this;
     }
 
     @Override
@@ -133,8 +155,148 @@ public class GameState {
         return getPlanetStates()
                 .stream().flatMap(s -> Stream.concat(
                         s.getMovingArmies(owner),
-                        Stream.of(s.getStationedArmy(owner))
+                        s.getStationedArmy(owner) == null ? Stream.empty() : Stream.of(s.getStationedArmy(owner))
                 )).mapToInt(Army::getSize).sum();
     }
 
+    public GameState setMove(Stream<Move> moves) {
+        GameDescription game = GameDescription.LATEST_INSTANCE;
+        moves.forEach(move -> {
+            if (move.getMoveFrom() == move.getMoveTo())
+                return;
+
+            PlanetState planetStateFrom = getPlanetState(move.getMoveFrom());
+            PlanetState planetStateTo = getPlanetState(move.getMoveTo());
+            Army ourStationedArmy = planetStateFrom.getOurStationedArmy();
+            if (ourStationedArmy == null)
+                return;
+
+            int sentProbably = Math.min(ourStationedArmy.getSize(), move.getArmySize());
+
+            if (ourStationedArmy.getSize() == sentProbably && (ourStationedArmy.getRealSize() - ourStationedArmy.getSize()) == 0) {
+                planetStateFrom.getStationedArmies().remove(ourStationedArmy);
+            } else {
+                ourStationedArmy.setSize(ourStationedArmy.getRealSize() - sentProbably);
+            }
+            double time = Helper.timeToMoveWithoutCeil(planetStateFrom.getAsPlanet(), planetStateTo.getAsPlanet());
+            Positioned<Double> doublePositioned = planetStateFrom.getAsPlanet().goesTo(planetStateTo.getAsPlanet(),
+                    -(game.getBroadcastSchedule() - game.getInternalSchedule()) / time);
+
+            Army army = new Army();
+            army.setOwner(ourStationedArmy.getOwner())
+                    .setSize(sentProbably)
+                    .setX(doublePositioned.getX())
+                    .setY(doublePositioned.getY());
+
+            planetStateTo.getMovingArmies().add(army);
+        });
+
+        return this;
+    }
+
+    public GameState copy() {
+        return gson.fromJson(gson.toJson(this), GameState.class);
+    }
+
+    public GameState setAfterTime(long afterTime) {
+        int fromTick = getTickElapsed();
+
+        int deltaTick = Helper.timeToTick(afterTime);
+
+        if (Helper.tickToTime(deltaTick) < afterTime) {
+            ++deltaTick;
+        }
+
+        int toTick = fromTick + deltaTick;
+
+        GameState cp = copy();
+        for (int currentTick = fromTick; currentTick < toTick; ++currentTick) {
+            cp.setToNextState();
+        }
+
+        return cp;
+    }
+
+    public GameState setToNextState() {
+        GameDescription game = GameDescription.LATEST_INSTANCE;
+        int deltatime = (int) Helper.tickToTime(1);
+        setTimeElapsed(getTimeElapsed() + deltatime);
+
+
+        // mozgó seregek
+        List<ArmyExtent> armyExtentList = getMovingExtentArmies().collect(Collectors.toList());
+        armyExtentList.forEach(a -> {
+            Army army = a.getArmy();
+            if (a.getToTick() == getTickElapsed() + 1) {
+                // megérkeztetés
+                PlanetState planetState = getPlanetState(a.getToPlanet());
+                planetState.getMovingArmies().remove(army);
+
+                Army stationedArmy = planetState.getStationedArmy(army.getOwner());
+                if (stationedArmy == null) {
+                    stationedArmy = new Army().setOwner(army.getOwner());
+                    planetState.getStationedArmies().add(stationedArmy);
+                }
+                stationedArmy.setSize(stationedArmy.getRealSize() + army.getRealSize());
+            } else {
+                Positioned<Double> positionAfterTime = Helper.getPositionAfterTime(army, game.getPlanet(a.getToPlanet()), deltatime);
+                army.setX(positionAfterTime.getX())
+                        .setY(positionAfterTime.getY());
+            }
+        });
+
+        getPlanetExtents().forEach(p -> {
+            PlanetState planetState = p.getPlanetState();
+            int radius = planetState.getAsPlanet().getRadius();
+            List<Army> stationedArmies = planetState.getStationedArmies();
+            switch (p.getState()) {
+                case BATTLE:
+                    Map<String, Double> stringNumberMap =
+                            Helper.killAtTime(stationedArmies.stream().collect(Collectors.toMap(Army::getOwner, Army::getRealSize)), deltatime);
+
+                    stationedArmies.removeIf(a -> stringNumberMap.get(a.getOwner()).intValue() == 0);
+                    stationedArmies.forEach(a -> a.setSize(stringNumberMap.get(a.getOwner()).doubleValue()));
+                    break;
+                case CAPTURE:
+                    Army army = stationedArmies.get(0);
+                    String owner = army.getOwner();
+
+                    double amount = Helper.capturingWhileTime(radius, army.getSize(), deltatime);
+                    double ownershipRatio = planetState.getOwnershipRatio();
+                    if (planetState.isOwns(owner)) {
+                        planetState.setOwnershipRatio(Math.min(1, ownershipRatio + amount));
+                    } else if (amount > ownershipRatio) {
+                        planetState.setOwner(owner);
+                        planetState.setOwnershipRatio(amount - ownershipRatio);
+                    } else {
+                        planetState.setOwnershipRatio(ownershipRatio - amount);
+                    }
+
+                    break;
+                case UNIT_CREATE:
+                    if (stationedArmies.size() == 0) {
+                        stationedArmies.add(new Army().setOwner(planetState.getOwner()));
+                    }
+                    Army armyC = stationedArmies.get(0);
+
+                    armyC.setSize(armyC.getRealSize() + Helper.creatingArmyWhileTime(radius, deltatime));
+                    break;
+            }
+        });
+
+        // standings
+        getStandings().forEach(o -> o.setStrength(getAllArmy(o.getUserID()) +
+                (int) getPlanetStates().stream().mapToDouble(p ->
+                        Helper.planetWeight(p.getAsPlanet().getRadius(),
+                                p.isOwns(o.getUserID()),
+                                p.getOwnershipRatio())).sum()));
+
+        setRemainingPlayers((int) getStandings().stream().filter(p -> p.getStrength() > 0).count());
+
+        if (getRemainingPlayers() == 1 || getTimeElapsed() >= game.getGameLength()) {
+            setGameStatus(GameStatus.ENDED);
+        }
+
+        return this;
+    }
 }

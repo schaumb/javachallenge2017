@@ -1,22 +1,13 @@
 package logic;
 
-import jsons.Move;
 import jsons.gamedesc.GameDescription;
 import jsons.gamestate.GameState;
 
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 public interface ILogic extends AutoCloseable {
     Logger LOG = Logger.getLogger(ILogic.class.getName());
     String OUR_TEAM = "overload";
-
-    static ILogic createLogic() {
-        return LearningAlgorithm.THE_LEARNING_ALGORITHM.collapse(new GuiLogic());
-    }
-
-    default void setMessageConsumer(Consumer<Move> consumer) {
-    }
 
     default void setGameDescription(GameDescription gameDescription) {
     }
@@ -26,12 +17,6 @@ public interface ILogic extends AutoCloseable {
     default ILogic collapse(ILogic other) {
         ILogic orig = this;
         return new ILogic() {
-            @Override
-            public void setMessageConsumer(Consumer<Move> consumer) {
-                orig.setMessageConsumer(consumer);
-                other.setMessageConsumer(consumer);
-            }
-
             @Override
             public void setGameDescription(GameDescription gameDescription) {
                 orig.setGameDescription(gameDescription);

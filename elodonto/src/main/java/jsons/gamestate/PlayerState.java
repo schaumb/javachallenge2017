@@ -20,8 +20,18 @@ public class PlayerState {
         return strength;
     }
 
+    public PlayerState setStrength(int strength) {
+        this.strength = strength;
+        return this;
+    }
+
     public int getScore() {
         return score;
+    }
+
+    public PlayerState setScore(int score) {
+        this.score = score;
+        return this;
     }
 
     @Override
@@ -46,5 +56,9 @@ public class PlayerState {
                 ", strength=" + strength +
                 ", score=" + score +
                 '}';
+    }
+
+    public boolean isUs() {
+        return getAsPlayer().isUs();
     }
 }

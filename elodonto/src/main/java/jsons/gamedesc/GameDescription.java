@@ -4,6 +4,7 @@ import logic.ILogic;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 public class GameDescription {
     public static GameDescription LATEST_INSTANCE;
@@ -48,16 +49,8 @@ public class GameDescription {
                 .findAny().orElse(null);
     }
 
-    public long getCurrentTime() {
-        return Math.max(0, Math.min(getGameLength(), System.currentTimeMillis() - GameDescription.GAME_STARTED_MS));
-    }
-
-    public long getCurrentTick() {
-        return getTickFromTime(getCurrentTime());
-    }
-
-    public long getRemainingTime() {
-        return getGameLength() - getCurrentTime();
+    public IntStream getPlanetIDs() {
+        return getPlanets().stream().mapToInt(Planet::getPlanetID);
     }
 
     public int getGameLength() {

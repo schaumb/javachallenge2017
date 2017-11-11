@@ -7,6 +7,7 @@ import jsons.gamedesc.Planet;
 import jsons.gamestate.Army;
 import jsons.gamestate.GameState;
 import jsons.gamestate.PlanetState;
+import jsons.gamestate.PlayerState;
 
 import javax.swing.*;
 import java.awt.*;
@@ -85,7 +86,9 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                             Army army = stationedArmies.get(i);
                             g.setColor(army.isOurs() ? Color.BLUE : Color.MAGENTA);
 
-                            g.drawString("" + army.getSize(), planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + i * size);
+                            if (army.getSize() > 0) {
+                                g.drawString("" + army.getSize(), planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + i * size);
+                            }
                         }
                     }
                     for (Army army : planetState.getMovingArmies()) {
@@ -162,7 +165,12 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
 
     @Override
     public void close() {
-        frame.dispose();
+        if (currGameState != null)
+            currGameState.getStandings().stream()
+                    .filter(PlayerState::isUs).findFirst()
+                    .ifPresent(p -> System.err.println("Score : " + p.getScore()));
+        if (frame != null)
+            frame.dispose();
     }
 
     private class DrawPane extends JPanel {

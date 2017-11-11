@@ -3,11 +3,9 @@ package jsons.gamestate;
 import jsons.common.IOwned;
 import jsons.common.Positioned;
 
-import java.util.Objects;
-
 public class Army extends Positioned<Double> implements IOwned {
     private String owner;
-    private int size;
+    private double size;
 
     public boolean isInMove() {
         return getX() != null && getY() != null;
@@ -24,12 +22,16 @@ public class Army extends Positioned<Double> implements IOwned {
     }
 
     public int getSize() {
-        return size;
+        return (int) size;
     }
 
-    public Army setSize(int size) {
+    public Army setSize(double size) {
         this.size = size;
         return this;
+    }
+
+    public double getRealSize() {
+        return size;
     }
 
     @Override
@@ -39,13 +41,17 @@ public class Army extends Positioned<Double> implements IOwned {
 
         Army army = (Army) o;
 
-        return size == army.size && Objects.equals(owner, army.owner);
+        if (Double.compare(army.size, size) != 0) return false;
+        return owner != null ? owner.equals(army.owner) : army.owner == null;
     }
 
     @Override
     public int hashCode() {
-        int result = owner != null ? owner.hashCode() : 0;
-        result = 31 * result + size;
+        int result;
+        long temp;
+        result = owner != null ? owner.hashCode() : 0;
+        temp = Double.doubleToLongBits(size);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;
     }
 

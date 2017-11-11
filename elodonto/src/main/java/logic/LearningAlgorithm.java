@@ -6,7 +6,6 @@ import com.google.gson.JsonSyntaxException;
 import jsons.Move;
 import jsons.common.ArmyExtent;
 import jsons.common.Helper;
-import jsons.common.PlanetExtent;
 import jsons.common.PlayerExtent;
 import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
@@ -17,6 +16,7 @@ import jsons.gamestate.PlayerState;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 
 public class LearningAlgorithm implements ILogic {
 
-    static final LearningAlgorithm THE_LEARNING_ALGORITHM;
+    public static final LearningAlgorithm THE_LEARNING_ALGORITHM;
     private static final File learningStateFile = new File("learning.txt");
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
@@ -36,7 +36,7 @@ public class LearningAlgorithm implements ILogic {
     private GameState currentGameState;
     private GameState prevGameState;
     private States states;
-    private HashMap<String, HashSet<StateIndices>> steps = new HashMap<>();
+    private HashMap<String, ArrayList<StateIndices>> steps = new HashMap<>();
     private HashMap<String, HashMap<Integer, // tick
             PlayerIndex>> players = new HashMap<>();
     private Boolean up;
@@ -51,6 +51,7 @@ public class LearningAlgorithm implements ILogic {
     public void setGameDescription(GameDescription gameDescription) {
         steps.clear();
         players.clear();
+        up = null;
         tick(0);
     }
 
@@ -105,6 +106,9 @@ public class LearningAlgorithm implements ILogic {
                         int planetID = planetState.getPlanetID();
                         int size = planetState.getStationedArmy(userID).getSize();
 
+                        if (size < game.getMinMovableArmySize())
+                            return;
+
                         HashMap<Integer, Integer> collect = currentGameState.getMovingExtentArmy(userID)
                                 .filter(a -> a.getFromTick() == prevTick)
                                 .collect(Collectors.toMap(
@@ -120,8 +124,9 @@ public class LearningAlgorithm implements ILogic {
                             collect.put(planetID, size - sent);
                         }
                         StateIndices stateIndices = new StateIndices(prevTick, planetID, size, up == player.isUs(), collect);
-                        steps.computeIfAbsent(userID, i -> new HashSet<>())
+                        steps.computeIfAbsent(userID, i -> new ArrayList<>())
                                 .add(stateIndices);
+
 
                         stateIndices.setWeight(1.0);
                     });
@@ -147,14 +152,27 @@ public class LearningAlgorithm implements ILogic {
                         Army ourStationedArmy = planetState.getOurStationedArmy();
                         int size = ourStationedArmy.getSize();
 
+                        if (size < game.getMinMovableArmySize())
+                            return;
+
                         System.err.println("Create possibles: ");
-                        ArrayList<StateIndices> possibles = createPossibles(tick, size, planetID, size, game.getPlanets().stream()
-                                .map(Planet::getPlanetID).collect(Collectors.toList()), 0, game.getPlanets().size());
+                        ArrayList<StateIndices> possibles = createPossibles(tick, size, planetID, size,
+                                game.getPlanetIDs().toArray(), 0, game.getPlanets().size());
                         System.err.println("End created possibles");
 
                         System.err.println(possibles.size());
 
-                        possibles.sort(getSorter(planetExtent));
+                        possibles.sort(getSorter());
+
+
+                        System.err.println("Tick: " + tick + ", From: " + planetID + ", Units: " + size);
+                        AtomicInteger nTh = new AtomicInteger(0);
+                        possibles.stream()
+                                .limit(10)
+                                .forEach(p -> {
+                                    System.err.println(nTh.getAndIncrement() + ".th: \n" + p.getString());
+                                });
+
                         StateIndices state = possibles.get(0);
 
                         state.setWeight(1.0);
@@ -181,50 +199,70 @@ public class LearningAlgorithm implements ILogic {
         }
     }
 
-    private Comparator<StateIndices> getSorter(PlanetExtent planetExtent) {
+    private Comparator<StateIndices> getSorter() {
+        GameDescription game = GameDescription.LATEST_INSTANCE;
         List<ToDoubleFunction<StateIndices>> buntik = new ArrayList<>(Arrays.asList(
-                StateIndices::getWeight
-                , i -> 1 / i.toPlanets.entrySet().stream().mapToDouble(e -> {
-                    PlanetExtent toPlanetExtent = currentGameState.getPlanetExtent(e.getKey());
-                    PlanetState toPlanetState = toPlanetExtent.getPlanetState();
-                    Planet toPlanet = toPlanetState.getAsPlanet();
+                // StateIndices::getWeight,
+                i -> 1.0,
+                i -> {
+                    final StringBuilder builder = new StringBuilder();
 
-                    long timeToMove = Helper.timeToMove(planetExtent.getPlanetState().getAsPlanet(), toPlanet);
+                    GameState copy = currentGameState.copy().setMove(i.moves());
+                    Planet from = game.getPlanet(i.getFrom());
 
-                    int enemySize = toPlanetState.getEnemyStationedArmies()
-                            .mapToInt(Army::getSize).sum();
-                    // TODO hozzáadni a mozgással töltött idő alatt odamenő, illetve generálódó enemyket
+                    double res = 1 / i.toPlanets.entrySet().stream().mapToDouble(e -> {
+                        PlanetState toPlanetState = copy.getPlanetState(e.getKey());
+                        Planet toPlanet = toPlanetState.getAsPlanet();
 
-                    boolean owns = toPlanetState.isOwns(OUR_TEAM);
-                    double amount = toPlanetState.getOwnershipRatio();
-                    // TODO genrálni az odamozgásra keletkező cuccokat
+                        long timeToMove = Helper.timeToMove(from, toPlanet);
 
-                    if(enemySize > e.getValue()) { //  nem éri meg ??
-                        return Double.MIN_VALUE;
-                    }
+                        int enemySize = toPlanetState.getEnemyStationedArmies()
+                                .mapToInt(Army::getSize).sum();
+                        // TODO hozzáadni a mozgással töltött idő alatt odamenő, illetve generálódó enemyket
 
-                    double got = owns && amount == 1.0 ? Double.MIN_VALUE : Helper.planetWeight(toPlanet.getRadius(), 1) // got toPlanet
-                            ; // TODO kill enemy ???
+                        boolean owns = toPlanetState.isOwns(OUR_TEAM);
+                        double amount = toPlanetState.getOwnershipRatio();
+                        // TODO genrálni az odamozgásra keletkező cuccokat
 
-                    long timeToKill = Helper.timeToKillSomeone(Arrays.asList(e.getValue(), enemySize));
+                        if (enemySize > e.getValue() || // ha a bolygón több az ellenfél mint az unit (?? - pl végső állapot)
+                                owns && amount == 1.0) { //  ha birtokoljuk teljes mértékben (?? - ha épp le akarják támadni)
+                            return Double.MIN_VALUE;
+                        }
 
-                    long timeToCapture = Helper.timeToCapture(toPlanet.getRadius(), e.getValue(), owns, amount);
+                        double got = Helper.planetWeight(toPlanet.getRadius(), true, 1) // got toPlanet
+                                ; // TODO kill enemy ???
 
-                    return got / (timeToMove + timeToKill + timeToCapture);
-                }).sum()));
+                        long timeToKill = Helper.timeToKillSomeone(Arrays.asList(e.getValue(), enemySize));
+
+                        long timeToCapture = Helper.timeToCapture(toPlanet.getRadius(), e.getValue(), owns, amount);
+
+                        double insideRes = got / (timeToMove + timeToKill + timeToCapture);
+                        builder.append("to: ").append(e.getKey())
+                                .append(", unit: ").append(e.getValue())
+                                .append(", got: ").append(got)
+                                .append(", times: (").append(timeToMove).append(", ").append(timeToKill).append(", ").append(timeToCapture)
+                                .append("), res: ").append(insideRes).append("\n");
+
+                        return insideRes;
+                    }).sum();
+
+                    builder.append("final state is, after sum and reciprocal: ").append(res).append("\n");
+                    i.setString(builder.toString());
+                    return res;
+                }));
 
         ToDoubleFunction<StateIndices> reduce = buntik.stream().reduce(i -> 1.0, (a, b) -> x -> a.applyAsDouble(x) * b.applyAsDouble(x));
         return Comparator.comparingDouble(reduce);
     }
 
-    private ArrayList<StateIndices> createPossibles(int tick, int all, int fromPlanet, int size, List<Integer> planetIndices, int from, int to) {
+    private ArrayList<StateIndices> createPossibles(int tick, int all, int fromPlanet, int size, int[] planetIndices, int from, int to) {
         int minMovableArmySize = GameDescription.LATEST_INSTANCE.getMinMovableArmySize();
         ArrayList<StateIndices> possibles = new ArrayList<>();
         for (int toPlanet = from; toPlanet < to; ++toPlanet) {
-            if (planetIndices.get(toPlanet) != fromPlanet) {
+            if (planetIndices[toPlanet] != fromPlanet) {
                 for (int count = minMovableArmySize; count <= size; count = Math.max(minMovableArmySize + count, size)) {
                     for (StateIndices state : createPossibles(tick, all, fromPlanet, size - count, planetIndices, toPlanet + 1, to)) {
-                        state.toPlanets.put(planetIndices.get(toPlanet), count);
+                        state.toPlanets.put(planetIndices[toPlanet], count);
                         possibles.add(state);
                     }
                 }
@@ -312,6 +350,7 @@ public class LearningAlgorithm implements ILogic {
         private final int units;
         private final HashMap<Integer, Integer> toPlanets;
         private final IntUnaryOperator intUnaryOperator;
+        private String string;
 
         private StateIndices(int tick, int from, int units, boolean swap, HashMap<Integer, Integer> toPlanets) {
             this.tick = tick;
@@ -397,6 +436,14 @@ public class LearningAlgorithm implements ILogic {
             result = 31 * result + units;
             result = 31 * result + (toPlanets != null ? toPlanets.hashCode() : 0);
             return result;
+        }
+
+        public String getString() {
+            return string;
+        }
+
+        public void setString(String string) {
+            this.string = string;
         }
     }
 }

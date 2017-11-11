@@ -1,34 +1,34 @@
 package wsimpl;
 
-import javax.websocket.*;
-import javax.xml.bind.DatatypeConverter;
+import jsons.Move;
+import logic.GuiLogic;
+import logic.ILogic;
+import logic.LearningAlgorithm;
+
+import javax.websocket.DeploymentException;
 import java.io.IOException;
-import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.function.Consumer;
 
 public class Main {
     public final static Object o = new Object();
+    public static ILogic logic = LearningAlgorithm.THE_LEARNING_ALGORITHM.collapse(new GuiLogic());
+    public static Consumer<Move> sender;
+    public static Runnable closer = () -> {
+        logic.close();
+        synchronized (o) {
+            o.notifyAll();
+        }
+    };
+    public static Runnable endTick = () -> {
+    };
 
     public static void main(String[] args) throws IOException, DeploymentException, InterruptedException {
         while (!o.equals(args)) {
-            WebSocketContainer webSocket = ContainerProvider.getWebSocketContainer();
-            ClientEndpointConfig.Configurator configurator = new ClientEndpointConfig.Configurator() {
-                @Override
-                public void beforeRequest(Map<String, List<String>> headers) {
-                    headers.put("Authorization", Collections.singletonList("Basic " + DatatypeConverter.printBase64Binary("overload:FF76MJ5XlF6YU8HQAqr".getBytes())));
-                }
-            };
-            ClientEndpointConfig config = ClientEndpointConfig.Builder.create().configurator(configurator).build();
 
-            Session session = webSocket.connectToServer(ClientEndpoint.class, config, URI.create("ws://javachallenge.loxon.hu:8080/JavaChallenge2017/websocket"));
+            new ServerImitator();
 
             synchronized (o) {
                 o.wait();
-            }
-            if (session.isOpen()) {
-                session.close();
             }
         }
     }

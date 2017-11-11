@@ -26,23 +26,23 @@ public class PlanetExtent {
                 .mapToLong(ArmyExtent::getToTime)
                 .min().orElse(gameDescription.getGameLength());
 
-        if (planetState.getStationedArmies().size() == 0) {
-            state = planetState.hasOwner() ? CurrentState.EMPTY_WITH_OWNER : CurrentState.EMPTY;
-        } else if (planetState.getStationedArmies().size() > 1) {
+        if (planetState.getStationedArmies().size() > 1) {
             state = CurrentState.BATTLE;
 
             endWithoutInterruption = Helper.timeToKillSomeone(planetState.getStationedArmies().stream().map(Army::getSize).collect(Collectors.toList()));
 
-        } else if (planetState.getStationedArmies().size() == 1 &&
-                planetState.isOwns(planetState.getStationedArmies().get(0).getOwner()) &&
+        } else if ((planetState.getStationedArmies().size() == 0 || planetState.isOwns(planetState.getStationedArmies().get(0).getOwner())) &&
+                planetState.hasOwner() &&
                 planetState.getOwnershipRatio() == 1.0) {
             state = CurrentState.UNIT_CREATE;
-        } else {
+        } else if (planetState.getStationedArmies().size() == 1) {
             state = CurrentState.CAPTURE;
 
             endWithoutInterruption = Helper.timeToCapture(planetState.getAsPlanet().getRadius(),
                     planetState.getStationedArmies().get(0).getSize(), planetState.isOwns(planetState.getStationedArmies().get(0).getOwner()),
                     planetState.getOwnershipRatio());
+        } else {
+            state = planetState.hasOwner() ? CurrentState.EMPTY_WITH_NOT_WHOLE_OWNER : CurrentState.EMPTY;
         }
 
         this.state = state;
@@ -90,10 +90,10 @@ public class PlanetExtent {
         }
     }
 
-    public Map<String, Number> getBattleStateAt(long time) {
+    public Map<String, Double> getBattleStateAt(long time) {
         return Helper.killAtTime(planetState.getStationedArmies().stream().collect(Collectors.toMap(
                 Army::getOwner,
-                Army::getSize
+                Army::getRealSize
         )), time);
     }
 
@@ -106,13 +106,13 @@ public class PlanetExtent {
     }
 
     public int getArmiesCountAtTimeWithoutInterrupt(long atTime) {
-        return getPlanetState().getStationedArmies().get(0).getSize() +
-                Helper.creatingArmyWhileTime(getPlanetState().getAsPlanet().getRadius(), atTime - time);
+        return (int) (getPlanetState().getStationedArmies().get(0).getRealSize() +
+                Helper.creatingArmyWhileTime(getPlanetState().getAsPlanet().getRadius(), atTime - time));
     }
 
     public enum CurrentState {
         EMPTY,
-        EMPTY_WITH_OWNER,
+        EMPTY_WITH_NOT_WHOLE_OWNER,
         BATTLE,
         CAPTURE,
         UNIT_CREATE

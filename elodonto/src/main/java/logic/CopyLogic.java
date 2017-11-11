@@ -127,7 +127,7 @@ public class CopyLogic implements ILogic, Runnable {
             PlanetState fromPlanetState = currGameState.getPlanetState(fromPlanetID);
             if (fromPlanetState.getStationedArmies().size() == 1 &&
                     fromPlanetState.getMovingArmies().stream().filter(a -> !a.isOurs())
-                            .mapToInt(Army::getSize).sum() < (fromPlanetState.getStationedArmies().get(0).getSize())
+                            .mapToInt(Army::getSize).sum() < fromPlanetState.getStationedArmies().get(0).getSize()
                     && fromPlanetState.getOwnershipRatio() < 1.0) {
                 Army army = fromPlanetState.getStationedArmies().get(0);
 
