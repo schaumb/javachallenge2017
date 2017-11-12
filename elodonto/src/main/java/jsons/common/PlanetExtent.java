@@ -62,7 +62,7 @@ public class PlanetExtent {
     public long getInterruptionTime() {
         long interrupt = GameDescription.LATEST_INSTANCE.getGameLength();
         for (Army army : planetState.getMovingArmies()) {
-            long armyToTime = gameState.getArmyExtent(army).getToTime();
+            long armyToTime = gameState.getArmyExtent(planetState, army).getToTime();
             if (armyToTime < interrupt)
                 interrupt = armyToTime;
         }
@@ -89,10 +89,7 @@ public class PlanetExtent {
     }
 
     public Map<String, Double> getBattleStateAt(long time) {
-        return Helper.killAtTime(planetState.getStationedArmies().stream().collect(Collectors.toMap(
-                Army::getOwner,
-                Army::getRealSize
-        )), time);
+        return Helper.killAtTime(planetState.getStationedArmies(), time);
     }
 
     public long getTimeWhenCreatedArmiesWithoutInterrupt(int armySize) {

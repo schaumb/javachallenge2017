@@ -1,7 +1,9 @@
 package jsons.common;
 
 import jsons.gamedesc.GameDescription;
+import jsons.gamestate.Army;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -10,10 +12,6 @@ import java.util.stream.IntStream;
 public class Helper {
     public static <T extends Number, U extends Number> double timeToMoveWithoutCeil(Positioned<T> from, Positioned<U> to) {
         return from.distance(to) / GameDescription.LATEST_INSTANCE.getMovementSpeed() * 1000;
-    }
-
-    public static <T extends Number, U extends Number> long timeToMove(Positioned<T> from, Positioned<U> to) {
-        return (long) Math.ceil(timeToMoveWithoutCeil(from, to));
     }
 
     public static <T extends Number, U extends Number> Positioned<Double> getPositionAfterTime(Positioned<T> now, Positioned<U> to, long time) {
@@ -65,19 +63,34 @@ public class Helper {
         return time;
     }
 
-    public static Map<String, Double> killAtTime(Map<String, Double> collect, long time) {
+    public static Map<String, Double> killAtTime(List<Army> armies, long time) {
+        Map<String, Double> collect = new HashMap<>();
+        int hasUnit = 0;
+        double sum = 0;
+        for (Army army : armies) {
+            collect.put(army.getOwner(), army.getRealSize());
+            if (army.getSize() > 0)
+                ++hasUnit;
+            sum += army.getRealSize();
+        }
+
 
         GameDescription gameDescription = GameDescription.LATEST_INSTANCE;
         long currentTime = 0;
-        while (collect.values().stream().filter(n -> n.intValue() > 0).count() > 1 && currentTime < time) {
+        while (hasUnit > 1 && currentTime < time) {
             currentTime += gameDescription.getInternalSchedule();
-            double sum = collect.values().stream().mapToDouble(Number::doubleValue).sum();
-            Map<String, Double> finalCollect = collect;
-
-            collect = finalCollect.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                    e -> e.getValue() - gameDescription.getBattleSpeed() *
-                            Math.pow(sum - e.getValue(), gameDescription.getBattleExponent())
-                            / sum / 1000 * gameDescription.getInternalSchedule()));
+            double prevSum = sum;
+            sum = 0;
+            hasUnit = 0;
+            for (Map.Entry<String, Double> e : collect.entrySet()) {
+                double next = e.getValue() - gameDescription.getBattleSpeed() *
+                        Math.pow(prevSum - e.getValue(), gameDescription.getBattleExponent())
+                        / prevSum / 1000 * gameDescription.getInternalSchedule();
+                e.setValue(next);
+                sum += next;
+                if ((int) next > 0)
+                    ++hasUnit;
+            }
         }
         return collect;
     }

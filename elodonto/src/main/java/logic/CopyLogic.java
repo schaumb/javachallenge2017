@@ -71,7 +71,7 @@ public class CopyLogic implements ILogic, Runnable {
         for (PlanetState planetState : gameState.getPlanetStates()) {
             for (Army army : planetState.getMovingArmies()) {
                 if (!army.isOurs()) {
-                    now.doing.add(currGameState.getArmyExtent(army));
+                    now.doing.add(currGameState.getArmyExtent(planetState, army));
                 }
             }
         }

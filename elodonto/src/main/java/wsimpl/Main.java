@@ -25,8 +25,8 @@ public class Main {
     public static void main(String[] args) throws IOException, DeploymentException, InterruptedException {
         while (!o.equals(args)) {
 
-            // ClientEndpoint.createEndpoint();
-            new ServerImitator();
+            ClientEndpoint.createEndpoint();
+            // new ServerImitator();
 
             synchronized (o) {
                 o.wait();

@@ -4,10 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import jsons.Move;
-import jsons.common.ArmyExtent;
 import jsons.common.PlayerExtent;
 import jsons.gamedesc.GameDescription;
-import jsons.gamedesc.Planet;
 import jsons.gamestate.Army;
 import jsons.gamestate.GameState;
 import jsons.gamestate.PlanetState;
@@ -94,43 +92,54 @@ public class LearningAlgorithm implements ILogic {
         GameDescription game = GameDescription.LATEST_INSTANCE;
         if (currentGameState != null) {
             if (up == null) {
-                up = currentGameState.getOurStationedArmiedExtentPlanetStates().anyMatch(e -> e.getPlanetState().getPlanetID() == 101);
+                up = currentGameState.getOurStationedArmiesExtentPlanetStates().anyMatch(e -> e.getPlanetState().getPlanetID() == 101);
             }
+            /*
             if (prevGameState != null) {
                 // try to collect moves:
                 int prevTick = tick - 1;
-                game.getPlayers().forEach(player -> {
+                for (Player player : game.getPlayers()) {
                     String userID = player.getUserID();
-                    prevGameState.getStationedArmiesExtentPlanetStates(userID).forEach(planetExtent -> {
-                        PlanetState planetState = planetExtent.getPlanetState();
+
+                    for (PlanetState planetState : prevGameState.getPlanetStates()) {
+                        Army army = null;
+                        for (Army army1 : planetState.getStationedArmies()) {
+                            if(army1.isOwns(userID)) {
+                                army = army1;
+                                break;
+                            }
+                        }
+                        if(army == null)
+                            continue;
+
                         int planetID = planetState.getPlanetID();
-                        int size = planetState.getStationedArmy(userID).getSize();
+                        int size = army.getSize();
 
                         if (size < game.getMinMovableArmySize())
                             return;
 
-                        HashMap<Integer, Integer> collect = currentGameState.getMovingExtentArmy(userID)
-                                .filter(a -> a.getFromTick() == prevTick)
-                                .collect(Collectors.toMap(
-                                        (ArmyExtent a) -> a.getToPlanet().getPlanetID(),
-                                        a -> a.getArmy().getSize(),
-                                        (i, j) -> i + j,
-                                        HashMap::new
-                                ));
-
-                        int sent = collect.values().stream().mapToInt(i -> i).sum();
+                        int sent = 0;
+                        HashMap<Integer, Integer> collect = new HashMap<>();
+                        for (PlanetState state : currentGameState.getPlanetStates()) {
+                            for (Army army1 : state.getMovingArmies()) {
+                                if(army1.isOwns(userID) && currentGameState.getArmyExtent(state, army1).getFromTick() == prevTick) {
+                                    sent +=  army1.getSize();
+                                    collect.put(state.getPlanetID(), army1.getSize());
+                                }
+                            }
+                        }
 
                         if (size > sent) {
                             collect.put(planetID, size - sent);
                         }
+
                         StateIndices stateIndices = new StateIndices(prevTick, planetID, size, up == player.isUs(), collect);
                         steps.computeIfAbsent(userID, i -> new ArrayList<>())
                                 .add(stateIndices);
 
-
                         stateIndices.setWeight(1.0);
-                    });
-                });
+                    }
+                }
 
                 double average = currentGameState.getStandings()
                         .stream()
@@ -144,53 +153,61 @@ public class LearningAlgorithm implements ILogic {
                         });
             }
 
-            // make my steps
-            currentGameState.getOurStationedArmiedExtentPlanetStates()
-                    .forEach(planetExtent -> {
-                        PlanetState planetState = planetExtent.getPlanetState();
-                        int planetID = planetState.getPlanetID();
-                        Army ourStationedArmy = planetState.getOurStationedArmy();
-                        int size = ourStationedArmy.getSize();
-
-                        if (size < game.getMinMovableArmySize())
-                            return;
-
-                        long startTime = System.currentTimeMillis();
-                        System.err.println("Creates possibilities");
-                        Stream<StateIndices> possibles = createPossibles(tick, size, planetID, size,
-                                game.getPlanetIDs().toArray(), 0, 2);
-                        System.err.println("End created possibles took ms: " + (System.currentTimeMillis() - startTime));
-
-                        startTime = System.currentTimeMillis();
-                        System.err.println("Sorting...");
-                        possibles = possibles.sorted(getSorter());
-                        System.err.println("Sorting took ms: " + (System.currentTimeMillis() - startTime));
-
-                        System.err.println("Get first...");
-                        startTime = System.currentTimeMillis();
-                        StateIndices state = possibles.findFirst().get();
-                        System.err.println("Get first took ms: " + (System.currentTimeMillis() - startTime));
-
-                        state.setWeight(1.0);
-
-                        state.moves().forEach(m -> m.send(OUR_TEAM));
-                    });
-
             prevGameState = currentGameState;
-        } else {
-            Planet planetFromUp = game.getPlanet(101);
-            game.getPlanets().stream().sorted(Comparator.comparingDouble(planetFromUp::distance))
-                    .skip(1).findFirst().ifPresent(planetTo ->
-                    new Move().setArmySize(Integer.MAX_VALUE)
-                            .setMoveFrom(planetFromUp.getPlanetID())
-                            .setMoveTo(planetTo.getPlanetID()).send(OUR_TEAM));
+            */
+            // System.err.println("MAKE STEPS");
 
-            Planet planetFromDown = game.getPlanet(102);
-            game.getPlanets().stream().sorted(Comparator.comparingDouble(planetFromDown::distance))
-                    .skip(1).findFirst().ifPresent(planetTo ->
-                    new Move().setArmySize(Integer.MAX_VALUE)
-                            .setMoveFrom(planetFromDown.getPlanetID())
-                            .setMoveTo(planetTo.getPlanetID()).send(OUR_TEAM));
+            // make my steps
+            for (PlanetState planetState : currentGameState.getPlanetStates()) {
+                Army ourStationedArmy = null;
+                for (Army army : planetState.getStationedArmies()) {
+                    if (army.isOurs()) {
+                        ourStationedArmy = army;
+                        break;
+                    }
+                }
+                if (ourStationedArmy == null)
+                    continue;
+
+                int planetID = planetState.getPlanetID();
+                int size = ourStationedArmy.getSize();
+
+                if (size < game.getMinMovableArmySize())
+                    return;
+
+
+                StateIndices state = null;
+                long startTime = System.currentTimeMillis();
+
+                List<StateIndices> states = createPossibles(tick, size, planetID, size,
+                        game.getPlanetIDs().toArray(), 0, 1).sorted(getSorter()).limit(10).collect(Collectors.toList());
+                state = states.get(0);
+                System.err.println("Get first took ms: " + (System.currentTimeMillis() - startTime));
+                for (StateIndices stateIndices : states) {
+                    System.err.println(stateIndices + " calcWeight: " + stateIndices.getCalculatedWeight());
+                }
+
+
+                /*
+                startTime = System.currentTimeMillis();
+                ArrayList<StateIndices> list = new ArrayList<>();
+                createPossibles(list, tick, size, planetID, size, game.getPlanetIDs().toArray(), 0, 2);
+                list.sort(getSorter());
+                state = list.get(0);
+                System.err.println("Get list generate and sort took: " + (System.currentTimeMillis() - startTime));
+                */
+                state.setWeight(1.0);
+
+                state.moves().forEach(m -> m.send(OUR_TEAM));
+            }
+
+        } else {
+            new Move().setArmySize(Integer.MAX_VALUE)
+                    .setMoveFrom(102)
+                    .setMoveTo(106).send(OUR_TEAM);
+            new Move().setArmySize(Integer.MAX_VALUE)
+                    .setMoveFrom(101)
+                    .setMoveTo(105).send(OUR_TEAM);
         }
     }
 
@@ -203,40 +220,74 @@ public class LearningAlgorithm implements ILogic {
                     if (i.getCalculatedWeight() != -1.0)
                         return i.getCalculatedWeight();
 
-                    GameState copy = currentGameState.copy().setMove(i.moves(), OUR_TEAM).setAfterTime(game.getGameLength() - currentGameState.getTimeElapsed());
+                    GameState copy = currentGameState.copy().setMove(OUR_TEAM, i.moves()).setAfterTime((game.getGameLength() - currentGameState.getTimeElapsed()) / 2);
 
-                    return i.setCalculatedWeight(copy.getOurState().getStrength()).getCalculatedWeight();
+                    double weight = 1.0;
+                    for (PlayerState playerState : copy.getStandings()) {
+                        if (playerState.isUs())
+                            weight *= playerState.getStrength();
+                        else
+                            weight /= playerState.getStrength();
+                    }
+
+                    return i.setCalculatedWeight(weight).getCalculatedWeight();
                 }));
 
         ToDoubleFunction<StateIndices> reduce = buntik.stream().reduce(i -> 1.0, (a, b) -> x -> a.applyAsDouble(x) * b.applyAsDouble(x));
-        return Comparator.comparingDouble(reduce);
+        return Comparator.comparingDouble(reduce).reversed()
+                .thenComparing(Comparator.comparingInt(i -> i.toPlanets.size()));
     }
 
     private Stream<StateIndices> createPossibles(int tick, int armySize, int fromPlanet, int size, int[] planetIndices, int from, int maxSplit) {
         int minMovableArmySize = GameDescription.LATEST_INSTANCE.getMinMovableArmySize();
 
-        Stream<StateIndices> possibles = Stream.empty();
+        StateIndices state = new StateIndices(tick, fromPlanet, armySize, up, new HashMap<>());
         if (size > 0) {
-            StateIndices state = new StateIndices(tick, fromPlanet, armySize, up, new HashMap<>());
             state.toPlanets.put(fromPlanet, size);
-            possibles = Stream.of(state);
-
         }
+        Stream<StateIndices> possibles = Stream.of(state);
 
         if (maxSplit > 0) {
             possibles = Stream.concat(possibles,
                     IntStream.range(from, planetIndices.length)
                             .filter(i -> planetIndices[i] != fromPlanet)
                             .mapToObj(toPlanet ->
-                                    IntStream.rangeClosed(minMovableArmySize, size)
+                                    IntStream.rangeClosed(Math.max(minMovableArmySize, Math.min(size, size / 4)), size)
                                             .mapToObj(count ->
                                                     createPossibles(tick, armySize, fromPlanet, size - count, planetIndices, toPlanet + 1, maxSplit - 1)
+                                                            .peek(i -> i.toPlanets.put(planetIndices[toPlanet], count))
                                             )
                             ).flatMap(Function.identity())
-                            .flatMap(Function.identity())).parallel();
+                            .flatMap(Function.identity()));
         }
 
         return possibles;
+    }
+
+    private void createPossibles(ArrayList<StateIndices> to, int tick, int armySize, int fromPlanet, int size, int[] planetIndices, int from, int maxSplit) {
+        int minMovableArmySize = GameDescription.LATEST_INSTANCE.getMinMovableArmySize();
+
+        if (size > 0) {
+            StateIndices state = new StateIndices(tick, fromPlanet, armySize, up, new HashMap<>());
+            state.toPlanets.put(fromPlanet, size);
+            to.add(state);
+        }
+
+        if (maxSplit > 0) {
+            for (int toPlanet = from; toPlanet < planetIndices.length; ++toPlanet) {
+                if (planetIndices[toPlanet] == fromPlanet)
+                    continue;
+
+                for (int count = Math.max(minMovableArmySize, size / 4); count <= size; ++count) {
+                    int addFrom = to.size();
+                    createPossibles(to, tick, armySize, fromPlanet, size - count, planetIndices, toPlanet + 1, maxSplit - 1);
+
+                    for (int add = addFrom; add < to.size(); ++add) {
+                        to.get(add).toPlanets.put(planetIndices[toPlanet], count);
+                    }
+                }
+            }
+        }
     }
 
     static class MoveState {
@@ -312,7 +363,6 @@ public class LearningAlgorithm implements ILogic {
         private final int units;
         private final HashMap<Integer, Integer> toPlanets;
         private final IntUnaryOperator intUnaryOperator;
-        private String string;
 
         private double calculatedWeight = -1;
 
@@ -408,12 +458,14 @@ public class LearningAlgorithm implements ILogic {
             return result;
         }
 
-        public String getString() {
-            return string;
-        }
-
-        public void setString(String string) {
-            this.string = string;
+        @Override
+        public String toString() {
+            return "StateIndices{" +
+                    "tick=" + tick +
+                    ", from=" + from +
+                    ", units=" + units +
+                    ", toPlanets=" + toPlanets +
+                    '}';
         }
     }
 }

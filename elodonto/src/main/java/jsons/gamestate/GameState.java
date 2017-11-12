@@ -8,7 +8,6 @@ import wsimpl.ClientEndpoint;
 import wsimpl.Main;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GameState {
@@ -39,15 +38,8 @@ public class GameState {
         }
     }
 
-    public PlanetState getArmyPlanetState(Army army) {
-        return getPlanetStates().stream()
-                .filter(pss -> pss.getStationedArmies().stream().anyMatch(a -> a == army) ||
-                        pss.getMovingArmies().stream().anyMatch(a -> a == army))
-                .findAny().orElse(null);
-    }
-
-    public ArmyExtent getArmyExtent(Army army) {
-        return new ArmyExtent(this, army);
+    public ArmyExtent getArmyExtent(PlanetState state, Army army) {
+        return new ArmyExtent(this, state, army);
     }
 
     public PlayerExtent getPlayerExtent(PlayerState state) {
@@ -77,31 +69,10 @@ public class GameState {
         return getPlayerState(ILogic.OUR_TEAM);
     }
 
-    public Stream<PlanetExtent> getOurStationedArmiedExtentPlanetStates() {
+    public Stream<PlanetExtent> getOurStationedArmiesExtentPlanetStates() {
         return getPlanetStates().stream()
                 .filter(planetStates -> planetStates.getStationedArmies().stream().anyMatch(Army::isOurs))
                 .map(this::getPlanetExtent);
-    }
-
-    public Stream<ArmyExtent> getOurMovingExtentArmy() {
-        return getMovingExtentArmies()
-                .filter(a -> a.getArmy().isOurs());
-    }
-
-    public Stream<ArmyExtent> getMovingExtentArmy(String owns) {
-        return getMovingExtentArmies()
-                .filter(a -> a.getArmy().isOwns(owns));
-    }
-
-    public Stream<ArmyExtent> getMovingExtentArmies() {
-        return getPlanetStates().stream()
-                .flatMap(s -> s.getMovingArmies().stream())
-                .map(this::getArmyExtent);
-    }
-
-    public Stream<ArmyExtent> getEnemiesMovingExtentArmy() {
-        return getMovingExtentArmies()
-                .filter(a -> !a.getArmy().isOurs());
     }
 
     public PlanetState getPlanetState(int id) {
@@ -116,10 +87,6 @@ public class GameState {
 
     public List<PlayerState> getStandings() {
         return standings;
-    }
-
-    public Stream<PlayerState> getEnemies() {
-        return getStandings().stream().filter(e -> !e.getAsPlayer().isUs());
     }
 
     public GameStatus getGameStatus() {
@@ -164,22 +131,16 @@ public class GameState {
                 '}';
     }
 
-    public Stream<PlanetExtent> getStationedArmiesExtentPlanetStates(String who) {
-        return getPlanetStates().stream()
-                .filter(planetStates -> planetStates.getStationedArmies().stream().anyMatch(a -> Objects.equals(a.getOwner(), who)))
-                .map(this::getPlanetExtent);
-    }
-
     public int getAllArmy(String owner) {
         int sum = 0;
         for (PlanetState planetState : getPlanetStates()) {
             for (Army army : planetState.getMovingArmies()) {
-                if (army.getOwner().equals(owner))
+                if (army.isOwns(owner))
                     sum += army.getSize();
             }
 
             for (Army army : planetState.getStationedArmies()) {
-                if (army.getOwner().equals(owner))
+                if (army.isOwns(owner))
                     sum += army.getSize();
             }
         }
@@ -202,7 +163,7 @@ public class GameState {
         return this;
     }
 
-    public GameState setMove(Stream<Move> moves, String owner) {
+    public GameState setMove(String owner, Stream<Move> moves) {
         GameDescription game = GameDescription.LATEST_INSTANCE;
         moves.forEach(move -> {
             if (move.getMoveFrom() == move.getMoveTo())
@@ -251,24 +212,35 @@ public class GameState {
 
         long prevTick = fromTick;
         long currentTick;
-        while ((currentTick = getPlanetExtents().mapToLong(PlanetExtent::getInterruptionTick).min().orElse(toTick)) < toTick) {
+        while ((currentTick = getInterruptionTickOrElse(toTick)) < toTick) {
             setToNextState((int) (currentTick - prevTick));
             prevTick = currentTick;
         }
 
         setToNextState(deltaTick);
 
+        setStrengthAndGameStatus();
+        return this;
+    }
+
+    private void setStrengthAndGameStatus() {
         int remainingPlayers = 0;
+        HashMap<String, Double> strength = new HashMap<>();
         for (PlayerState playerState : getStandings()) {
-            double res = getAllArmy(playerState.getUserID());
+            strength.put(playerState.getUserID(), (double) getAllArmy(playerState.getUserID()));
+        }
 
-            for (PlanetState planetState : getPlanetStates()) {
-                res += Helper.planetWeight(planetState.getAsPlanet().getRadius(),
-                        planetState.isOwns(playerState.getUserID()),
-                        planetState.getOwnershipRatio());
+        for (PlanetState planetState : getPlanetStates()) {
+            if (planetState.hasOwner()) {
+                strength.compute(planetState.getOwner(), (k, v) ->
+                        v + Helper.planetWeight(planetState.getAsPlanet().getRadius(),
+                                true, planetState.getOwnershipRatio())
+                );
             }
+        }
 
-            playerState.setStrength((int) res);
+        for (PlayerState playerState : getStandings()) {
+            playerState.setStrength(strength.get(playerState.getUserID()).intValue());
             if (playerState.getStrength() > 0)
                 ++remainingPlayers;
         }
@@ -277,24 +249,26 @@ public class GameState {
 
         if (getRemainingPlayers() == 1 || getTimeElapsed() >= GameDescription.LATEST_INSTANCE.getGameLength()) {
             setGameStatus(GameStatus.ENDED);
-
-            /* TODO
-            getStandings().forEach(o -> {
-                o.setScore()
-            });
-            */
         }
+    }
 
-        return this;
+    private long getInterruptionTickOrElse(int toTick) {
+        long min = toTick;
+        for (PlanetState planetState : getPlanetStates()) {
+            long interruptionTick = getPlanetExtent(planetState).getInterruptionTick();
+            if (interruptionTick < min)
+                min = interruptionTick;
+        }
+        return min;
     }
 
     private GameState setToNextState(int deltaTick) {
         int deltaTime = (int) Helper.tickToTime(deltaTick);
         setTimeElapsed(getTimeElapsed() + deltaTime);
 
-
-        delayedMoves.getOrDefault(getTickElapsed(), new HashMap<>())
-                .forEach((k, v) -> setMove(v, k));
+        HashMap<String, Stream<Move>> delayedMoves = GameState.delayedMoves.getOrDefault(getTickElapsed(), new HashMap<>());
+        delayedMoves.forEach(this::setMove);
+        delayedMoves.clear();
 
         moveArmies(deltaTick, deltaTime);
         calculatePlanetStates(deltaTime);
@@ -304,12 +278,15 @@ public class GameState {
     private void moveArmies(int deltaTick, int deltaTime) {
         // mozgó seregek
         for (PlanetState planetState : getPlanetStates()) {
-            planetState.getMovingArmies().removeIf(army -> {
-                ArmyExtent armyExtent = getArmyExtent(army);
+            Iterator<Army> iterator = planetState.getMovingArmies().iterator();
+            while (iterator.hasNext()) {
+                Army army = iterator.next();
+                ArmyExtent armyExtent = getArmyExtent(planetState, army);
                 int toTick = getTickElapsed() + deltaTick;
-                if (armyExtent.getToTick() < toTick) {
-                    throw new RuntimeException("Bad deltaTick :(");
-                } else if (armyExtent.getToTick() == toTick) {
+                if (armyExtent.getToTick() <= toTick) {
+                    if (armyExtent.getToTick() < toTick) {
+                        System.err.println("BAD DELTA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    }
                     // megérkeztetés
 
                     Army stationedArmy = planetState.getStationedArmy(army.getOwner());
@@ -318,14 +295,13 @@ public class GameState {
                         planetState.getStationedArmies().add(stationedArmy);
                     }
                     stationedArmy.setSize(stationedArmy.getRealSize() + army.getRealSize());
-                    return true;
+                    iterator.remove();
                 } else {
                     Positioned<Double> positionAfterTime = Helper.getPositionAfterTime(army, planetState.getAsPlanet(), deltaTime);
                     army.setX(positionAfterTime.getX())
                             .setY(positionAfterTime.getY());
                 }
-                return false;
-            });
+            }
         }
     }
 
@@ -336,7 +312,7 @@ public class GameState {
             switch (getPlanetExtent(planetState).getState()) {
                 case BATTLE:
                     Map<String, Double> stringNumberMap =
-                            Helper.killAtTime(stationedArmies.stream().collect(Collectors.toMap(Army::getOwner, Army::getRealSize)), deltaTime);
+                            Helper.killAtTime(stationedArmies, deltaTime);
 
                     stationedArmies.removeIf(a -> stringNumberMap.get(a.getOwner()).intValue() == 0);
                     stationedArmies.forEach(a -> a.setSize(stringNumberMap.get(a.getOwner()).doubleValue()));

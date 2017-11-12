@@ -4,6 +4,7 @@ import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
 import jsons.gamestate.Army;
 import jsons.gamestate.GameState;
+import jsons.gamestate.PlanetState;
 
 import java.util.Comparator;
 
@@ -14,10 +15,10 @@ public class ArmyExtent {
     private Planet fromPlanet;
     private Long fromTime;
 
-    public ArmyExtent(GameState gameState, Army army) {
+    public ArmyExtent(GameState gameState, PlanetState state, Army army) {
         this.army = army;
-        this.toPlanet = gameState.getArmyPlanetState(army).getAsPlanet();
-        this.toTime = gameState.getTimeElapsed() + Helper.timeToMove(army, toPlanet);
+        this.toPlanet = state.getAsPlanet();
+        this.toTime = gameState.getTimeElapsed() + (long) Helper.timeToMoveWithoutCeil(army, toPlanet);
     }
 
     public Army getArmy() {
@@ -26,7 +27,7 @@ public class ArmyExtent {
 
     public long getFromTime() {
         if (fromTime == null && army.isInMove()) {
-            fromTime = toTime - Helper.timeToMove(getFromPlanet(), toPlanet);
+            fromTime = toTime - (long) Helper.timeToMoveWithoutCeil(getFromPlanet(), toPlanet);
         }
         return fromTime;
     }

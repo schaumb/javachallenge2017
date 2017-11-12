@@ -55,11 +55,10 @@ public class ServerImitator {
                             "{\"score\":0,\"strength\":351,\"userID\":\"bot1\"}]}",
                     GameState.class);
     private final Timer timer = new Timer();
-    private GameState curr = firstGameState.copy().setMove(Stream.of(new Move().setArmySize(50).setMoveFrom(101).setMoveTo(105)), "bot1")
-            .setDelayedMove(Stream.of(new Move().setArmySize(50).setMoveFrom(105).setMoveTo(103)), "bot1", 20);
+    private GameState curr = firstGameState.copy().setMove("bot1", Stream.of(new Move().setArmySize(50).setMoveFrom(101).setMoveTo(105)));
 
     public ServerImitator() {
-        Main.sender = (m, s) -> curr.setMove(Stream.of(m), s);
+        Main.sender = (m, s) -> curr.setMove(s, Stream.of(m));
         Main.endTick = new Runnable() {
             @Override
             public synchronized void run() {
