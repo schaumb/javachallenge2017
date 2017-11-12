@@ -123,7 +123,7 @@ public class CopyLogic implements ILogic, Runnable {
             }
             System.err.println("Sleeped to " + d.getFromTime());
 
-            Integer fromPlanetID = transformer.apply(d.getFromPlanet());
+            Integer fromPlanetID = transformer.apply(d.getFromPlanet().getPlanetID());
             PlanetState fromPlanetState = currGameState.getPlanetState(fromPlanetID);
             if (fromPlanetState.getStationedArmies().size() == 1 &&
                     fromPlanetState.getMovingArmies().stream().filter(a -> !a.isOurs())
@@ -165,7 +165,7 @@ public class CopyLogic implements ILogic, Runnable {
             new Move().setArmySize(d.getArmy().getSize()).setMoveFrom(
                     fromPlanetID
             ).setMoveTo(
-                    transformer.apply(d.getToPlanet())
+                    transformer.apply(d.getToPlanet().getPlanetID())
             ).send(OUR_TEAM);
         }
     }

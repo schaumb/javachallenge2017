@@ -63,7 +63,7 @@ public class ServerImitator {
         Main.endTick = new Runnable() {
             @Override
             public synchronized void run() {
-                Main.logic.setGameState(curr.setToNextState());
+                Main.logic.setGameState(curr.setAfterTime(gameDescription.getBroadcastSchedule()));
             }
         };
 

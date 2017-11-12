@@ -8,7 +8,6 @@ import logic.LearningAlgorithm;
 import javax.websocket.DeploymentException;
 import java.io.IOException;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public class Main {
     public final static Object o = new Object();
@@ -26,8 +25,8 @@ public class Main {
     public static void main(String[] args) throws IOException, DeploymentException, InterruptedException {
         while (!o.equals(args)) {
 
-            ClientEndpoint.createEndpoint();
-            // new ServerImitator();
+            // ClientEndpoint.createEndpoint();
+            new ServerImitator();
 
             synchronized (o) {
                 o.wait();

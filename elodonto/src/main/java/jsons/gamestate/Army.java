@@ -14,6 +14,8 @@ public class Army extends Positioned<Double> implements IOwned {
     public Army(Army movingArmy) {
         this.owner = movingArmy.owner;
         this.size = movingArmy.size;
+        this.setX(movingArmy.getX());
+        this.setY(movingArmy.getY());
     }
 
     public boolean isInMove() {

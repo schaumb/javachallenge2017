@@ -11,43 +11,27 @@ import java.util.stream.Collectors;
 public class PlanetExtent {
     private final long time;
     private final PlanetState planetState;
+    private final GameState gameState;
     private final CurrentState state;
-    private final long endWithoutInterruption;
-    private final long interruptionTime;
 
     public PlanetExtent(long time, GameState gameState, PlanetState planetState) {
         this.planetState = planetState;
-
-        GameDescription gameDescription = GameDescription.LATEST_INSTANCE;
+        this.gameState = gameState;
         CurrentState state;
-        long endWithoutInterruption = gameDescription.getGameLength();
-        long interruptionTime = planetState.getMovingArmies().stream()
-                .map(gameState::getArmyExtent)
-                .mapToLong(ArmyExtent::getToTime)
-                .min().orElse(gameDescription.getGameLength());
 
         if (planetState.getStationedArmies().size() > 1) {
             state = CurrentState.BATTLE;
-
-            endWithoutInterruption = Helper.timeToKillSomeone(planetState.getStationedArmies().stream().map(Army::getSize).collect(Collectors.toList()));
-
         } else if ((planetState.getStationedArmies().size() == 0 || planetState.isOwns(planetState.getStationedArmies().get(0).getOwner())) &&
                 planetState.hasOwner() &&
                 planetState.getOwnershipRatio() == 1.0) {
             state = CurrentState.UNIT_CREATE;
         } else if (planetState.getStationedArmies().size() == 1) {
             state = CurrentState.CAPTURE;
-
-            endWithoutInterruption = Helper.timeToCapture(planetState.getAsPlanet().getRadius(),
-                    planetState.getStationedArmies().get(0).getSize(), planetState.isOwns(planetState.getStationedArmies().get(0).getOwner()),
-                    planetState.getOwnershipRatio());
         } else {
             state = planetState.hasOwner() ? CurrentState.EMPTY_WITH_NOT_WHOLE_OWNER : CurrentState.EMPTY;
         }
 
         this.state = state;
-        this.endWithoutInterruption = endWithoutInterruption;
-        this.interruptionTime = interruptionTime;
         this.time = time;
     }
 
@@ -60,15 +44,29 @@ public class PlanetExtent {
     }
 
     public long getEndWithoutInterruption() {
-        return endWithoutInterruption;
+        switch (state) {
+            case BATTLE:
+                return Helper.timeToKillSomeone(planetState.getStationedArmies().stream().map(Army::getSize).collect(Collectors.toList()));
+            case CAPTURE:
+                return Helper.timeToCapture(planetState.getAsPlanet().getRadius(),
+                        planetState.getStationedArmies().get(0).getSize(), planetState.isOwns(planetState.getStationedArmies().get(0).getOwner()),
+                        planetState.getOwnershipRatio());
+        }
+        return GameDescription.LATEST_INSTANCE.getGameLength();
     }
 
     public long getEndTickWithoutInterruption() {
-        return GameDescription.LATEST_INSTANCE.getTickFromTime(endWithoutInterruption);
+        return GameDescription.LATEST_INSTANCE.getTickFromTime(getEndWithoutInterruption());
     }
 
     public long getInterruptionTime() {
-        return interruptionTime;
+        long interrupt = GameDescription.LATEST_INSTANCE.getGameLength();
+        for (Army army : planetState.getMovingArmies()) {
+            long armyToTime = gameState.getArmyExtent(army).getToTime();
+            if (armyToTime < interrupt)
+                interrupt = armyToTime;
+        }
+        return interrupt;
     }
 
     public long getInterruptionTick() {

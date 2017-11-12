@@ -9,31 +9,15 @@ import java.util.Comparator;
 
 public class ArmyExtent {
     private final Army army;
-    private final long fromTime;
-    private final int fromPlanet;
-    private final int toPlanet;
+    private final Planet toPlanet;
+    private final long toTime;
+    private Planet fromPlanet;
+    private Long fromTime;
 
     public ArmyExtent(GameState gameState, Army army) {
-        GameDescription gameDescription = GameDescription.LATEST_INSTANCE;
-        Planet toPlanet = gameState.getArmyPlanetState(army).getAsPlanet();
-        int timeElapsed = gameState.getTimeElapsed();
-        Planet planet = army.isInMove() ? gameDescription.getPlanets()
-                .stream()
-                .filter(p -> p != toPlanet)
-                .min(Comparator.comparingDouble(p -> Positioned.collinears(p, army, toPlanet)))
-                .orElse(null) : null;
-
         this.army = army;
-        this.toPlanet = toPlanet.getPlanetID();
-        this.fromPlanet = planet == null ? this.toPlanet : planet.getPlanetID();
-        this.fromTime = planet == null ? timeElapsed : Math.round(timeElapsed - 1000 * army.distance(planet) / gameDescription.getMovementSpeed());
-    }
-
-    public ArmyExtent(Army army, long fromTime, int fromPlanet, int toPlanet) {
-        this.army = army;
-        this.fromTime = fromTime;
-        this.fromPlanet = fromPlanet;
-        this.toPlanet = toPlanet;
+        this.toPlanet = gameState.getArmyPlanetState(army).getAsPlanet();
+        this.toTime = gameState.getTimeElapsed() + Helper.timeToMove(army, toPlanet);
     }
 
     public Army getArmy() {
@@ -41,6 +25,9 @@ public class ArmyExtent {
     }
 
     public long getFromTime() {
+        if (fromTime == null && army.isInMove()) {
+            fromTime = toTime - Helper.timeToMove(getFromPlanet(), toPlanet);
+        }
         return fromTime;
     }
 
@@ -52,17 +39,23 @@ public class ArmyExtent {
         return GameDescription.LATEST_INSTANCE.getTickFromTime(getToTime());
     }
 
-    public int getFromPlanet() {
+    public Planet getFromPlanet() {
+        if (fromPlanet == null && army.isInMove()) {
+            fromPlanet = GameDescription.LATEST_INSTANCE.getPlanets()
+                    .stream()
+                    .filter(p -> p.getPlanetID() != toPlanet.getPlanetID())
+                    .min(Comparator.comparingDouble(p -> Positioned.collinears(p, army, toPlanet)))
+                    .orElse(null);
+        }
         return fromPlanet;
     }
 
-    public int getToPlanet() {
+    public Planet getToPlanet() {
         return toPlanet;
     }
 
     public long getToTime() {
-        return getFromTime() + (long) Math.ceil(GameDescription.LATEST_INSTANCE.getPlanet(fromPlanet).distance(
-                GameDescription.LATEST_INSTANCE.getPlanet(toPlanet)) / GameDescription.LATEST_INSTANCE.getMovementSpeed() * 1000);
+        return toTime;
     }
 
     @Override
@@ -72,16 +65,16 @@ public class ArmyExtent {
 
         ArmyExtent that = (ArmyExtent) o;
 
-        return fromTime == that.fromTime && fromPlanet == that.fromPlanet && toPlanet == that.toPlanet && (army == that.army ||
-                (army != null && that.army != null && army.getSize() == that.army.getSize()));
+        if (toTime != that.toTime) return false;
+        if (army != null ? !army.equals(that.army) : that.army != null) return false;
+        return toPlanet != null ? toPlanet.equals(that.toPlanet) : that.toPlanet == null;
     }
 
     @Override
     public int hashCode() {
-        int result = army != null ? army.getSize() : 0;
-        result = 31 * result + (int) (fromTime ^ (fromTime >>> 32));
-        result = 31 * result + fromPlanet;
-        result = 31 * result + toPlanet;
+        int result = army != null ? army.hashCode() : 0;
+        result = 31 * result + (int) (toTime ^ (toTime >>> 32));
+        result = 31 * result + (toPlanet != null ? toPlanet.hashCode() : 0);
         return result;
     }
 
@@ -89,9 +82,10 @@ public class ArmyExtent {
     public String toString() {
         return "ArmyExtent{" +
                 "army=" + army +
-                ", fromTime=" + fromTime +
-                ", fromPlanet=" + fromPlanet +
                 ", toPlanet=" + toPlanet +
+                ", toTime=" + toTime +
+                ", fromPlanet=" + fromPlanet +
+                ", fromTime=" + fromTime +
                 '}';
     }
 }

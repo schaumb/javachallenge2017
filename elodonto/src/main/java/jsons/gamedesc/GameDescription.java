@@ -2,21 +2,21 @@ package jsons.gamedesc;
 
 import logic.ILogic;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
 public class GameDescription {
+    private static final HashMap<Integer, Planet> planetMap = new HashMap<>();
     public static GameDescription LATEST_INSTANCE;
     public static long GAME_STARTED_MS = -1;
     private int gameLength;
     private int mapSizeX;
     private int mapSizeY;
-
     private int commandSchedule;
     private int internalSchedule;
     private int broadcastSchedule;
-
     private int minMovableArmySize;
     private double movementSpeed;
     private double battleSpeed;
@@ -24,12 +24,11 @@ public class GameDescription {
     private double unitCreateSpeed;
     private double planetExponent;
     private double battleExponent;
-
     private List<Planet> planets;
-
     private List<Player> players;
 
     public GameDescription() {
+        planetMap.clear();
         LATEST_INSTANCE = this;
     }
 
@@ -44,9 +43,12 @@ public class GameDescription {
     }
 
     public Planet getPlanet(int id) {
-        return getPlanets().stream()
-                .filter(p -> p.getPlanetID() == id)
-                .findAny().orElse(null);
+        if (planetMap.isEmpty()) {
+            getPlanets().forEach(p -> {
+                planetMap.put(p.getPlanetID(), p);
+            });
+        }
+        return planetMap.get(id);
     }
 
     public IntStream getPlanetIDs() {

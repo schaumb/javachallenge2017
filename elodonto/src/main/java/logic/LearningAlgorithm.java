@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import jsons.Move;
 import jsons.common.ArmyExtent;
-import jsons.common.Helper;
 import jsons.common.PlayerExtent;
 import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
@@ -102,7 +101,7 @@ public class LearningAlgorithm implements ILogic {
                 int prevTick = tick - 1;
                 game.getPlayers().forEach(player -> {
                     String userID = player.getUserID();
-                    prevGameState.getStationedArmiedExtentPlanetStates(userID).forEach(planetExtent -> {
+                    prevGameState.getStationedArmiesExtentPlanetStates(userID).forEach(planetExtent -> {
                         PlanetState planetState = planetExtent.getPlanetState();
                         int planetID = planetState.getPlanetID();
                         int size = planetState.getStationedArmy(userID).getSize();
@@ -113,7 +112,7 @@ public class LearningAlgorithm implements ILogic {
                         HashMap<Integer, Integer> collect = currentGameState.getMovingExtentArmy(userID)
                                 .filter(a -> a.getFromTick() == prevTick)
                                 .collect(Collectors.toMap(
-                                        ArmyExtent::getToPlanet,
+                                        (ArmyExtent a) -> a.getToPlanet().getPlanetID(),
                                         a -> a.getArmy().getSize(),
                                         (i, j) -> i + j,
                                         HashMap::new
@@ -157,12 +156,6 @@ public class LearningAlgorithm implements ILogic {
                             return;
 
                         long startTime = System.currentTimeMillis();
-                        System.err.println("CountPosiibilities");
-                        long possibleSize = createPossibles(tick, size, planetID, size,
-                                game.getPlanetIDs().toArray(), 0, 2).count();
-                        System.err.println("End count possibles took ms: " + (System.currentTimeMillis() - startTime) + " size is: " + possibleSize);
-
-                        startTime = System.currentTimeMillis();
                         System.err.println("Creates possibilities");
                         Stream<StateIndices> possibles = createPossibles(tick, size, planetID, size,
                                 game.getPlanetIDs().toArray(), 0, 2);
@@ -210,40 +203,9 @@ public class LearningAlgorithm implements ILogic {
                     if (i.getCalculatedWeight() != -1.0)
                         return i.getCalculatedWeight();
 
-                    GameState copy = currentGameState.copy().setMove(i.moves(), OUR_TEAM);
-                    Planet from = game.getPlanet(i.getFrom());
+                    GameState copy = currentGameState.copy().setMove(i.moves(), OUR_TEAM).setAfterTime(game.getGameLength() - currentGameState.getTimeElapsed());
 
-                    double res = 1 / i.toPlanets.entrySet().stream().mapToDouble(e -> {
-                        PlanetState toPlanetState = copy.getPlanetState(e.getKey());
-                        Planet toPlanet = toPlanetState.getAsPlanet();
-
-                        long timeToMove = Helper.timeToMove(from, toPlanet);
-
-                        int enemySize = toPlanetState.getEnemyStationedArmies()
-                                .mapToInt(Army::getSize).sum();
-                        // TODO hozzáadni a mozgással töltött idő alatt odamenő, illetve generálódó enemyket
-
-                        boolean owns = toPlanetState.isOwns(OUR_TEAM);
-                        double amount = toPlanetState.getOwnershipRatio();
-                        // TODO genrálni az odamozgásra keletkező cuccokat
-
-                        if (enemySize > e.getValue() || // ha a bolygón több az ellenfél mint az unit (?? - pl végső állapot)
-                                owns && amount == 1.0) { //  ha birtokoljuk teljes mértékben (?? - ha épp le akarják támadni)
-                            return Double.MIN_VALUE;
-                        }
-
-                        double got = Helper.planetWeight(toPlanet.getRadius(), true, 1) // got toPlanet
-                                ; // TODO kill enemy ???
-
-                        long timeToKill = Helper.timeToKillSomeone(Arrays.asList(e.getValue(), enemySize));
-
-                        long timeToCapture = Helper.timeToCapture(toPlanet.getRadius(), e.getValue(), owns, amount);
-
-                        return got / (timeToMove + timeToKill + timeToCapture);
-                    }).sum();
-
-                    i.setCalculatedWeight(res);
-                    return res;
+                    return i.setCalculatedWeight(copy.getOurState().getStrength()).getCalculatedWeight();
                 }));
 
         ToDoubleFunction<StateIndices> reduce = buntik.stream().reduce(i -> 1.0, (a, b) -> x -> a.applyAsDouble(x) * b.applyAsDouble(x));
