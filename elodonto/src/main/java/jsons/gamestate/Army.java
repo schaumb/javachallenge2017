@@ -7,6 +7,15 @@ public class Army extends Positioned<Double> implements IOwned {
     private String owner;
     private double size;
 
+    public Army() {
+
+    }
+
+    public Army(Army movingArmy) {
+        this.owner = movingArmy.owner;
+        this.size = movingArmy.size;
+    }
+
     public boolean isInMove() {
         return getX() != null && getY() != null;
     }

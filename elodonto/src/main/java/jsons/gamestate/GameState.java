@@ -5,21 +5,41 @@ import jsons.Move;
 import jsons.common.*;
 import jsons.gamedesc.GameDescription;
 import logic.ILogic;
+import wsimpl.ClientEndpoint;
+import wsimpl.Main;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GameState {
     private static final Gson gson = new Gson();
+    private static final HashMap<Integer, HashMap<String, Stream<Move>>> delayedMoves = new HashMap<>();
     private List<PlanetState> planetStates;
     private List<PlayerState> standings;
     private GameStatus gameStatus;
     private int timeElapsed;
     private int remainingPlayers;
+
+    public GameState() {
+    }
+
+    public GameState(GameState gameState) {
+        this.gameStatus = gameState.gameStatus;
+        this.timeElapsed = gameState.timeElapsed;
+        this.remainingPlayers = gameState.remainingPlayers;
+        this.planetStates = new ArrayList<>(gameState.planetStates.size());
+
+        for (PlanetState planetState : gameState.planetStates) {
+            this.planetStates.add(new PlanetState(planetState));
+        }
+
+        this.standings = new ArrayList<>(gameState.standings.size());
+
+        for (PlayerState standing : gameState.standings) {
+            this.standings.add(new PlayerState(standing));
+        }
+    }
 
     public PlanetState getArmyPlanetState(Army army) {
         return getPlanetStates().stream()
@@ -159,12 +179,16 @@ public class GameState {
                         s.getStationedArmy(owner) == null ? Stream.empty() : Stream.of(s.getStationedArmy(owner))
                 )).mapToInt(Army::getSize).sum();
     }
-    private static final HashMap<Integer, HashMap<String, Stream<Move>>> delayedMoves = new HashMap<>();
 
     public GameState setDelayedMove(Stream<Move> moves, String owner, int plusTick) {
+        if (Main.sender instanceof ClientEndpoint) {
+            System.err.println("Can not set delayed move at real running env");
+            return this;
+        }
+
         delayedMoves.computeIfAbsent(getTickElapsed() + plusTick, i -> new HashMap<>())
                 .compute(owner, (o, prev) -> {
-                    if(prev == null)
+                    if (prev == null)
                         return moves;
 
                     return Stream.concat(prev, moves);
@@ -205,7 +229,7 @@ public class GameState {
     }
 
     public GameState copy() {
-        return gson.fromJson(gson.toJson(this), GameState.class);
+        return new GameState(this);
     }
 
     public GameState setAfterTime(long afterTime) {
@@ -233,7 +257,7 @@ public class GameState {
         setTimeElapsed(getTimeElapsed() + deltatime);
 
         delayedMoves.getOrDefault(getTickElapsed(), new HashMap<>())
-                .forEach((k ,v) -> {
+                .forEach((k, v) -> {
                     setMove(v, k);
                 });
 

@@ -4,6 +4,7 @@ import jsons.common.IOwned;
 import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -15,6 +16,29 @@ public class PlanetState implements IOwned {
 
     private List<Army> movingArmies;
     private List<Army> stationedArmies;
+
+    public PlanetState() {
+
+    }
+
+    public PlanetState(PlanetState planetState) {
+        this.planetID = planetState.planetID;
+        this.owner = planetState.owner;
+        this.ownershipRatio = planetState.ownershipRatio;
+
+        this.movingArmies = new ArrayList<>(planetState.movingArmies.size());
+
+        for (Army movingArmy : planetState.movingArmies) {
+            this.movingArmies.add(new Army(movingArmy));
+        }
+
+        this.stationedArmies = new ArrayList<>(planetState.stationedArmies.size());
+
+        for (Army stationedArmy : planetState.stationedArmies) {
+            this.stationedArmies.add(new Army(stationedArmy));
+        }
+    }
+
 
     public Planet getAsPlanet() {
         return GameDescription.LATEST_INSTANCE.getPlanet(getPlanetID());

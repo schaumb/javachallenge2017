@@ -16,7 +16,6 @@ import jsons.gamestate.PlayerState;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 import java.util.function.ToDoubleFunction;
@@ -157,16 +156,13 @@ public class LearningAlgorithm implements ILogic {
                         if (size < game.getMinMovableArmySize())
                             return;
 
-                        System.err.println("Create possibles: ");
-                        ArrayList<StateIndices> possibles = createPossibles(tick, size, planetID, size,
-                                game.getPlanetIDs().toArray(), 0, game.getPlanets().size());
-                        System.err.println("End created possibles");
-
-                        System.err.println(possibles.size());
-
-                        possibles.sort(getSorter());
-/*
                         long startTime = System.currentTimeMillis();
+                        System.err.println("CountPosiibilities");
+                        long possibleSize = createPossibles(tick, size, planetID, size,
+                                game.getPlanetIDs().toArray(), 0, 2).count();
+                        System.err.println("End count possibles took ms: " + (System.currentTimeMillis() - startTime) + " size is: " + possibleSize);
+
+                        startTime = System.currentTimeMillis();
                         System.err.println("Creates possibilities");
                         Stream<StateIndices> possibles = createPossibles(tick, size, planetID, size,
                                 game.getPlanetIDs().toArray(), 0, 2);
@@ -176,30 +172,15 @@ public class LearningAlgorithm implements ILogic {
                         System.err.println("Sorting...");
                         possibles = possibles.sorted(getSorter());
                         System.err.println("Sorting took ms: " + (System.currentTimeMillis() - startTime));
-*/
 
-                        /*System.err.println("Tick: " + tick + ", From: " + planetID + ", Units: " + size);
-                        AtomicInteger nTh = new AtomicInteger(0);
-                        possibles.stream()
-                                .limit(10)
-                                .forEach(p -> {
-                                    System.err.println(nTh.getAndIncrement() + ".th: \n" + p.getString());
-                                });*/
-
-                        StateIndices state = possibles.get(0);
-
-                        state.setWeight(1.0);
-
-                        state.moves().forEach(m -> m.send(OUR_TEAM));
-/*
                         System.err.println("Get first...");
+                        startTime = System.currentTimeMillis();
                         StateIndices state = possibles.findFirst().get();
                         System.err.println("Get first took ms: " + (System.currentTimeMillis() - startTime));
 
                         state.setWeight(1.0);
 
                         state.moves().forEach(m -> m.send(OUR_TEAM));
-*/
                     });
 
             prevGameState = currentGameState;
@@ -226,7 +207,8 @@ public class LearningAlgorithm implements ILogic {
                 // StateIndices::getWeight,
                 i -> 1.0,
                 i -> {
-                    final StringBuilder builder = new StringBuilder();
+                    if (i.getCalculatedWeight() != -1.0)
+                        return i.getCalculatedWeight();
 
                     GameState copy = currentGameState.copy().setMove(i.moves(), OUR_TEAM);
                     Planet from = game.getPlanet(i.getFrom());
@@ -257,18 +239,10 @@ public class LearningAlgorithm implements ILogic {
 
                         long timeToCapture = Helper.timeToCapture(toPlanet.getRadius(), e.getValue(), owns, amount);
 
-                        double insideRes = got / (timeToMove + timeToKill + timeToCapture);
-                        builder.append("to: ").append(e.getKey())
-                                .append(", unit: ").append(e.getValue())
-                                .append(", got: ").append(got)
-                                .append(", times: (").append(timeToMove).append(", ").append(timeToKill).append(", ").append(timeToCapture)
-                                .append("), res: ").append(insideRes).append("\n");
-
-                        return insideRes;
+                        return got / (timeToMove + timeToKill + timeToCapture);
                     }).sum();
 
-                    builder.append("final state is, after sum and reciprocal: ").append(res).append("\n");
-                    i.setString(builder.toString());
+                    i.setCalculatedWeight(res);
                     return res;
                 }));
 
@@ -276,55 +250,32 @@ public class LearningAlgorithm implements ILogic {
         return Comparator.comparingDouble(reduce);
     }
 
-    private ArrayList<StateIndices> createPossibles(int tick, int all, int fromPlanet, int size, int[] planetIndices, int from, int to) {
-        int minMovableArmySize = GameDescription.LATEST_INSTANCE.getMinMovableArmySize();
-        ArrayList<StateIndices> possibles = new ArrayList<>();
-        for (int toPlanet = from; toPlanet < to; ++toPlanet) {
-            if (planetIndices[toPlanet] != fromPlanet) {
-                for (int count = minMovableArmySize; count <= size; count = Math.max(minMovableArmySize + count, size)) {
-                    for (StateIndices state : createPossibles(tick, all, fromPlanet, size - count, planetIndices, toPlanet + 1, to)) {
-                        state.toPlanets.put(planetIndices[toPlanet], count);
-                        possibles.add(state);
-                    }
-                }
-            }
-        }
-        StateIndices state = new StateIndices(tick, fromPlanet, all, up, new HashMap<>());
-        if (size > 0) {
-            state.toPlanets.put(fromPlanet, size);
-        }
-        possibles.add(state);
-
-        return possibles;
-    }
-/*
-    private Stream<StateIndices> createPossibles(int tick, int all, int fromPlanet, int size, int[] planetIndices, int from, int maxSplit) {
+    private Stream<StateIndices> createPossibles(int tick, int armySize, int fromPlanet, int size, int[] planetIndices, int from, int maxSplit) {
         int minMovableArmySize = GameDescription.LATEST_INSTANCE.getMinMovableArmySize();
 
         Stream<StateIndices> possibles = Stream.empty();
         if (size > 0) {
-            StateIndices state = new StateIndices(tick, fromPlanet, all, up, new HashMap<>());
+            StateIndices state = new StateIndices(tick, fromPlanet, armySize, up, new HashMap<>());
             state.toPlanets.put(fromPlanet, size);
             possibles = Stream.of(state);
 
         }
 
-        if(maxSplit > 0) {
+        if (maxSplit > 0) {
             possibles = Stream.concat(possibles,
-            IntStream.range(from, planetIndices.length)
-                    .filter(i -> planetIndices[i] != fromPlanet)
-                    .mapToObj(toPlanet ->
-                        IntStream.rangeClosed(minMovableArmySize, size)
-                            .mapToObj(count ->
-                                createPossibles(tick, all, fromPlanet, size - count, planetIndices, toPlanet + 1, maxSplit - 1)
-                            )
-                    ).flatMap(Function.identity())
-                    .flatMap(Function.identity())).parallel();
+                    IntStream.range(from, planetIndices.length)
+                            .filter(i -> planetIndices[i] != fromPlanet)
+                            .mapToObj(toPlanet ->
+                                    IntStream.rangeClosed(minMovableArmySize, size)
+                                            .mapToObj(count ->
+                                                    createPossibles(tick, armySize, fromPlanet, size - count, planetIndices, toPlanet + 1, maxSplit - 1)
+                                            )
+                            ).flatMap(Function.identity())
+                            .flatMap(Function.identity())).parallel();
         }
 
         return possibles;
     }
-    */
 
     static class MoveState {
         private final HashMap<Integer, // toPlanet
@@ -401,6 +352,8 @@ public class LearningAlgorithm implements ILogic {
         private final IntUnaryOperator intUnaryOperator;
         private String string;
 
+        private double calculatedWeight = -1;
+
         private StateIndices(int tick, int from, int units, boolean swap, HashMap<Integer, Integer> toPlanets) {
             this.tick = tick;
             this.from = from;
@@ -422,9 +375,9 @@ public class LearningAlgorithm implements ILogic {
         }
 
         public double getWeight() {
-            ArrayList<MoveState> moveStates = states.computeIfAbsent(tick, t -> new HashMap<>())
-                    .computeIfAbsent(intUnaryOperator.applyAsInt(from), f -> new HashMap<>())
-                    .computeIfAbsent(units, f -> new ArrayList<>());
+            ArrayList<MoveState> moveStates = states.getOrDefault(tick, new HashMap<>())
+                    .getOrDefault(intUnaryOperator.applyAsInt(from), new HashMap<>())
+                    .getOrDefault(units, new ArrayList<>());
 
             MoveState moveState = new MoveState(toPlanets
                     .entrySet().stream().collect(Collectors.toMap(
@@ -460,6 +413,15 @@ public class LearningAlgorithm implements ILogic {
             }
         }
 
+        public double getCalculatedWeight() {
+            return calculatedWeight;
+        }
+
+        public StateIndices setCalculatedWeight(double calculatedWeight) {
+            this.calculatedWeight = calculatedWeight;
+            return this;
+        }
+
         public Stream<Move> moves() {
             return toPlanets.entrySet().stream()
                     .map(e -> new Move().setMoveFrom(from).setMoveTo(e.getKey()).setArmySize(e.getValue()));
@@ -472,10 +434,7 @@ public class LearningAlgorithm implements ILogic {
 
             StateIndices that = (StateIndices) o;
 
-            if (tick != that.tick) return false;
-            if (from != that.from) return false;
-            if (units != that.units) return false;
-            return toPlanets != null ? toPlanets.equals(that.toPlanets) : that.toPlanets == null;
+            return tick == that.tick && from == that.from && units == that.units && (toPlanets != null ? toPlanets.equals(that.toPlanets) : that.toPlanets == null);
         }
 
         @Override

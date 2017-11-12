@@ -8,6 +8,15 @@ public class PlayerState {
     private int strength;
     private int score;
 
+    public PlayerState() {
+    }
+
+    public PlayerState(PlayerState standing) {
+        this.userID = standing.userID;
+        this.strength = standing.strength;
+        this.score = standing.score;
+    }
+
     public Player getAsPlayer() {
         return GameDescription.LATEST_INSTANCE.getPlayer(getUserID());
     }
