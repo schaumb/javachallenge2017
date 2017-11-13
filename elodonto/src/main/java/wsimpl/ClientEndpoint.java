@@ -81,8 +81,8 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
 
         LOG.warning("Closed: " + closeReason.getReasonPhrase());
 
-        closer.run();
         Main.closer.run();
+        closer.run();
     }
 
     @Override
@@ -91,8 +91,8 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
 
         LOG.log(Level.WARNING, "onError", thr);
 
-        closer.run();
         Main.closer.run();
+        closer.run();
     }
 
     @Override

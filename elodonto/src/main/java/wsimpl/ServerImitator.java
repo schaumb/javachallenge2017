@@ -6,9 +6,9 @@ import jsons.gamedesc.GameDescription;
 import jsons.gamestate.GameState;
 import jsons.gamestate.GameStatus;
 
+import java.util.Collections;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.stream.Stream;
 
 public class ServerImitator {
 
@@ -55,10 +55,10 @@ public class ServerImitator {
                             "{\"score\":0,\"strength\":351,\"userID\":\"bot1\"}]}",
                     GameState.class);
     private final Timer timer = new Timer();
-    private GameState curr = firstGameState.copy().setMove("bot1", Stream.of(new Move().setArmySize(50).setMoveFrom(101).setMoveTo(105)));
+    private GameState curr = firstGameState.copy().setMove("bot1", Collections.singletonList(new Move().setArmySize(50).setMoveFrom(101).setMoveTo(105)));
 
     public ServerImitator() {
-        Main.sender = (m, s) -> curr.setMove(s, Stream.of(m));
+        Main.sender = (m, s) -> curr.setMove(s, Collections.singletonList(m));
         Main.endTick = new Runnable() {
             @Override
             public synchronized void run() {

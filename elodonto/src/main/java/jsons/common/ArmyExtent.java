@@ -42,11 +42,14 @@ public class ArmyExtent {
 
     public Planet getFromPlanet() {
         if (fromPlanet == null && army.isInMove()) {
-            fromPlanet = GameDescription.LATEST_INSTANCE.getPlanets()
-                    .stream()
-                    .filter(p -> p.getPlanetID() != toPlanet.getPlanetID())
-                    .min(Comparator.comparingDouble(p -> Positioned.collinears(p, army, toPlanet)))
-                    .orElse(null);
+            Comparator<Planet> comparator = Comparator.comparingDouble(p -> Positioned.collinears(p, army, toPlanet));
+            for (Planet planet : GameDescription.LATEST_INSTANCE.getPlanets()) {
+                if (planet.getPlanetID() != toPlanet.getPlanetID()) {
+                    if (fromPlanet == null || comparator.compare(planet, fromPlanet) < 0) {
+                        fromPlanet = planet;
+                    }
+                }
+            }
         }
         return fromPlanet;
     }

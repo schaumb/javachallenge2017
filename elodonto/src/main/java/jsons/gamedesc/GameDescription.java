@@ -1,5 +1,6 @@
 package jsons.gamedesc;
 
+import jsons.common.Helper;
 import logic.ILogic;
 
 import java.util.HashMap;
@@ -33,9 +34,11 @@ public class GameDescription {
     }
 
     public Player getPlayer(String id) {
-        return getPlayers().stream()
-                .filter(p -> Objects.equals(p.getUserID(), id))
-                .findAny().orElse(null);
+        for (Player player : getPlayers()) {
+            if (Objects.equals(player.getUserID(), id))
+                return player;
+        }
+        return null;
     }
 
     public Player getOurPlayer() {
@@ -57,6 +60,10 @@ public class GameDescription {
 
     public int getGameLength() {
         return gameLength;
+    }
+
+    public int getGameLengthInTick() {
+        return Helper.timeToTick(gameLength);
     }
 
     public int getMapSizeX() {

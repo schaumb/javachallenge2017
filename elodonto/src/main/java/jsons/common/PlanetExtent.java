@@ -5,9 +5,6 @@ import jsons.gamestate.Army;
 import jsons.gamestate.GameState;
 import jsons.gamestate.PlanetState;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-
 public class PlanetExtent {
     private final long time;
     private final PlanetState planetState;
@@ -43,22 +40,6 @@ public class PlanetExtent {
         return state;
     }
 
-    public long getEndWithoutInterruption() {
-        switch (state) {
-            case BATTLE:
-                return Helper.timeToKillSomeone(planetState.getStationedArmies().stream().map(Army::getSize).collect(Collectors.toList()));
-            case CAPTURE:
-                return Helper.timeToCapture(planetState.getAsPlanet().getRadius(),
-                        planetState.getStationedArmies().get(0).getSize(), planetState.isOwns(planetState.getStationedArmies().get(0).getOwner()),
-                        planetState.getOwnershipRatio());
-        }
-        return GameDescription.LATEST_INSTANCE.getGameLength();
-    }
-
-    public long getEndTickWithoutInterruption() {
-        return GameDescription.LATEST_INSTANCE.getTickFromTime(getEndWithoutInterruption());
-    }
-
     public long getInterruptionTime() {
         long interrupt = GameDescription.LATEST_INSTANCE.getGameLength();
         for (Army army : planetState.getMovingArmies()) {
@@ -71,38 +52,6 @@ public class PlanetExtent {
 
     public long getInterruptionTick() {
         return GameDescription.LATEST_INSTANCE.getTickFromTime(getInterruptionTime());
-    }
-
-    public long getStationedArmiesSizeWithoutInterruptAtTime(String who, long time) {
-        switch (getState()) {
-            case BATTLE:
-                return getBattleStateAt(time).get(who).intValue();
-            case CAPTURE:
-                return getPlanetState().getStationedArmies().get(0).isOwns(who) ?
-                        getPlanetState().getStationedArmies().get(0).getSize() : 0;
-            case UNIT_CREATE:
-                return getPlanetState().getStationedArmies().get(0).isOwns(who) ?
-                        getArmiesCountAtTimeWithoutInterrupt(time) : 0;
-            default:
-                return 0;
-        }
-    }
-
-    public Map<String, Double> getBattleStateAt(long time) {
-        return Helper.killAtTime(planetState.getStationedArmies(), time);
-    }
-
-    public long getTimeWhenCreatedArmiesWithoutInterrupt(int armySize) {
-        return Helper.timeToCreateArmy(getPlanetState().getAsPlanet().getRadius(), armySize);
-    }
-
-    public long getTickWhenCreatedArmiesWithoutInterrupt(int armySize) {
-        return GameDescription.LATEST_INSTANCE.getTickFromTime(getTimeWhenCreatedArmiesWithoutInterrupt(armySize));
-    }
-
-    public int getArmiesCountAtTimeWithoutInterrupt(long atTime) {
-        return (int) (getPlanetState().getStationedArmies().get(0).getRealSize() +
-                Helper.creatingArmyWhileTime(getPlanetState().getAsPlanet().getRadius(), atTime - time));
     }
 
     public enum CurrentState {

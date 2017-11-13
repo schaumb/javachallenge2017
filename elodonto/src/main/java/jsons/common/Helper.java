@@ -6,8 +6,6 @@ import jsons.gamestate.Army;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class Helper {
     public static <T extends Number, U extends Number> double timeToMoveWithoutCeil(Positioned<T> from, Positioned<U> to) {
@@ -45,22 +43,35 @@ public class Helper {
         return Math.pow(radius, gameDescription.getPlanetExponent()) * gameDescription.getUnitCreateSpeed() / 1000 * time;
     }
 
-    public static long timeToKillSomeone(List<Number> collect) {
-        long time = 0;
-        GameDescription gameDescription = GameDescription.LATEST_INSTANCE;
-        while (collect.stream().filter(n -> n.intValue() > 0).count() > 1) {
-            time += gameDescription.getInternalSchedule();
-
-            double sum = collect.stream().mapToDouble(Number::doubleValue).sum();
-            List<Number> finalCollect = collect;
-
-            collect = IntStream.range(0, collect.size()).mapToObj(i ->
-                    finalCollect.get(i).doubleValue() - gameDescription.getBattleSpeed() *
-                            Math.pow(sum - finalCollect.get(i).doubleValue(), gameDescription.getBattleExponent())
-                            / sum / 1000 * gameDescription.getInternalSchedule())
-                    .collect(Collectors.toList());
+    public static long timeToKillSomeone(List<Army> armies) {
+        Map<String, Double> collect = new HashMap<>();
+        int hasUnit = 0;
+        double sum = 0;
+        for (Army army : armies) {
+            collect.put(army.getOwner(), army.getRealSize());
+            if (army.getSize() > 0)
+                ++hasUnit;
+            sum += army.getRealSize();
         }
-        return time;
+
+        GameDescription gameDescription = GameDescription.LATEST_INSTANCE;
+        long currentTime = 0;
+        while (hasUnit > 1) {
+            currentTime += gameDescription.getInternalSchedule();
+            double prevSum = sum;
+            sum = 0;
+            hasUnit = 0;
+            for (Map.Entry<String, Double> e : collect.entrySet()) {
+                double next = e.getValue() - gameDescription.getBattleSpeed() *
+                        Math.pow(prevSum - e.getValue(), gameDescription.getBattleExponent())
+                        / prevSum / 1000 * gameDescription.getInternalSchedule();
+                e.setValue(next);
+                sum += next;
+                if ((int) next > 0)
+                    ++hasUnit;
+            }
+        }
+        return currentTime;
     }
 
     public static Map<String, Double> killAtTime(List<Army> armies, long time) {

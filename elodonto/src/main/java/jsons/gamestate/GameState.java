@@ -8,10 +8,9 @@ import wsimpl.ClientEndpoint;
 import wsimpl.Main;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 public class GameState {
-    private static final HashMap<Integer, HashMap<String, Stream<Move>>> delayedMoves = new HashMap<>();
+    private static final HashMap<Integer, HashMap<String, List<Move>>> delayedMoves = new HashMap<>();
     private List<PlanetState> planetStates;
     private List<PlayerState> standings;
     private GameStatus gameStatus;
@@ -55,30 +54,24 @@ public class GameState {
         return planetState == null ? null : getPlanetExtent(planetState);
     }
 
-    public Stream<PlanetExtent> getPlanetExtents() {
-        return getPlanetStates().stream().map(this::getPlanetExtent);
-    }
-
     private PlayerState getPlayerState(String id) {
-        return getStandings().stream()
-                .filter(p -> Objects.equals(p.getUserID(), id))
-                .findAny().orElse(null);
+        for (PlayerState playerState : getStandings()) {
+            if (Objects.equals(playerState.getUserID(), id))
+                return playerState;
+        }
+        return null;
     }
 
     public PlayerState getOurState() {
         return getPlayerState(ILogic.OUR_TEAM);
     }
 
-    public Stream<PlanetExtent> getOurStationedArmiesExtentPlanetStates() {
-        return getPlanetStates().stream()
-                .filter(planetStates -> planetStates.getStationedArmies().stream().anyMatch(Army::isOurs))
-                .map(this::getPlanetExtent);
-    }
-
     public PlanetState getPlanetState(int id) {
-        return getPlanetStates().stream()
-                .filter(p -> p.getPlanetID() == id)
-                .findAny().orElse(null);
+        for (PlanetState planetState : getPlanetStates()) {
+            if (planetState.getPlanetID() == id)
+                return planetState;
+        }
+        return null;
     }
 
     public List<PlanetState> getPlanetStates() {
@@ -147,7 +140,7 @@ public class GameState {
         return sum;
     }
 
-    public GameState setDelayedMove(Stream<Move> moves, String owner, int plusTick) {
+    public GameState setDelayedMove(List<Move> moves, String owner, int plusTick) {
         if (Main.sender instanceof ClientEndpoint) {
             System.err.println("Can not set delayed move at real running env");
             return this;
@@ -158,22 +151,24 @@ public class GameState {
                     if (prev == null)
                         return moves;
 
-                    return Stream.concat(prev, moves);
+                    ArrayList<Move> moves1 = new ArrayList<>(prev);
+                    moves1.addAll(moves);
+                    return moves1;
                 });
         return this;
     }
 
-    public GameState setMove(String owner, Stream<Move> moves) {
+    public GameState setMove(String owner, List<Move> moves) {
         GameDescription game = GameDescription.LATEST_INSTANCE;
-        moves.forEach(move -> {
+        for (Move move : moves) {
             if (move.getMoveFrom() == move.getMoveTo())
-                return;
+                continue;
 
             PlanetState planetStateFrom = getPlanetState(move.getMoveFrom());
             PlanetState planetStateTo = getPlanetState(move.getMoveTo());
             Army ourStationedArmy = planetStateFrom.getStationedArmy(owner);
             if (ourStationedArmy == null)
-                return;
+                continue;
 
             int sentProbably = Math.min(ourStationedArmy.getSize(), move.getArmySize());
 
@@ -190,13 +185,18 @@ public class GameState {
                     .setY(doublePositioned.getY());
 
             planetStateTo.getMovingArmies().add(army);
-        });
+        }
 
         return this;
     }
 
     public GameState copy() {
         return new GameState(this);
+    }
+
+    public GameState setWhileFirstArrives() {
+        long time = Helper.tickToTime((int) getInterruptionTickOrElse(GameDescription.LATEST_INSTANCE.getGameLengthInTick())) - getTimeElapsed();
+        return setAfterTime(time);
     }
 
     public GameState setAfterTime(long afterTime) {
@@ -266,7 +266,7 @@ public class GameState {
         int deltaTime = (int) Helper.tickToTime(deltaTick);
         setTimeElapsed(getTimeElapsed() + deltaTime);
 
-        HashMap<String, Stream<Move>> delayedMoves = GameState.delayedMoves.getOrDefault(getTickElapsed(), new HashMap<>());
+        HashMap<String, List<Move>> delayedMoves = GameState.delayedMoves.getOrDefault(getTickElapsed(), new HashMap<>());
         delayedMoves.forEach(this::setMove);
         delayedMoves.clear();
 

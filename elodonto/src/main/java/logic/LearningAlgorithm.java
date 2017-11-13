@@ -6,10 +6,10 @@ import com.google.gson.JsonSyntaxException;
 import jsons.Move;
 import jsons.common.PlayerExtent;
 import jsons.gamedesc.GameDescription;
+import jsons.gamedesc.Planet;
 import jsons.gamestate.Army;
 import jsons.gamestate.GameState;
 import jsons.gamestate.PlanetState;
-import jsons.gamestate.PlayerState;
 
 import java.io.*;
 import java.util.*;
@@ -92,7 +92,7 @@ public class LearningAlgorithm implements ILogic {
         GameDescription game = GameDescription.LATEST_INSTANCE;
         if (currentGameState != null) {
             if (up == null) {
-                up = currentGameState.getOurStationedArmiesExtentPlanetStates().anyMatch(e -> e.getPlanetState().getPlanetID() == 101);
+                up = currentGameState.getPlanetState(101).getStationedArmy(OUR_TEAM) != null;
             }
             /*
             if (prevGameState != null) {
@@ -180,7 +180,7 @@ public class LearningAlgorithm implements ILogic {
                 long startTime = System.currentTimeMillis();
 
                 List<StateIndices> states = createPossibles(tick, size, planetID, size,
-                        game.getPlanetIDs().toArray(), 0, 1).sorted(getSorter()).limit(10).collect(Collectors.toList());
+                        game.getPlanets(), 0, 1).sorted(getSorter()).limit(10).collect(Collectors.toList());
                 state = states.get(0);
                 System.err.println("Get first took ms: " + (System.currentTimeMillis() - startTime));
                 for (StateIndices stateIndices : states) {
@@ -219,18 +219,14 @@ public class LearningAlgorithm implements ILogic {
                 i -> {
                     if (i.getCalculatedWeight() != -1.0)
                         return i.getCalculatedWeight();
+                    GameState copy = currentGameState.copy().setMove(OUR_TEAM, i.moves());
 
-                    GameState copy = currentGameState.copy().setMove(OUR_TEAM, i.moves()).setAfterTime((game.getGameLength() - currentGameState.getTimeElapsed()) / 2);
-
-                    double weight = 1.0;
-                    for (PlayerState playerState : copy.getStandings()) {
-                        if (playerState.isUs())
-                            weight *= playerState.getStrength();
-                        else
-                            weight /= playerState.getStrength();
+                    double d = 0.0;
+                    for (int x = 0; x < 3; ++x) {
+                        d += copy.getPlayerExtent(copy.setWhileFirstArrives().getOurState()).getCurrentPossibleScore();
                     }
 
-                    return i.setCalculatedWeight(weight).getCalculatedWeight();
+                    return i.setCalculatedWeight(d).getCalculatedWeight();
                 }));
 
         ToDoubleFunction<StateIndices> reduce = buntik.stream().reduce(i -> 1.0, (a, b) -> x -> a.applyAsDouble(x) * b.applyAsDouble(x));
@@ -238,7 +234,7 @@ public class LearningAlgorithm implements ILogic {
                 .thenComparing(Comparator.comparingInt(i -> i.toPlanets.size()));
     }
 
-    private Stream<StateIndices> createPossibles(int tick, int armySize, int fromPlanet, int size, int[] planetIndices, int from, int maxSplit) {
+    private Stream<StateIndices> createPossibles(int tick, int armySize, int fromPlanet, int size, List<Planet> planetIndices, int from, int maxSplit) {
         int minMovableArmySize = GameDescription.LATEST_INSTANCE.getMinMovableArmySize();
 
         StateIndices state = new StateIndices(tick, fromPlanet, armySize, up, new HashMap<>());
@@ -249,13 +245,14 @@ public class LearningAlgorithm implements ILogic {
 
         if (maxSplit > 0) {
             possibles = Stream.concat(possibles,
-                    IntStream.range(from, planetIndices.length)
-                            .filter(i -> planetIndices[i] != fromPlanet)
-                            .mapToObj(toPlanet ->
+                    IntStream.range(from, planetIndices.size())
+                            .mapToObj(i -> planetIndices.get(i).getPlanetID())
+                            .filter(i -> i != fromPlanet)
+                            .map(toPlanet ->
                                     IntStream.rangeClosed(Math.max(minMovableArmySize, Math.min(size, size / 4)), size)
                                             .mapToObj(count ->
                                                     createPossibles(tick, armySize, fromPlanet, size - count, planetIndices, toPlanet + 1, maxSplit - 1)
-                                                            .peek(i -> i.toPlanets.put(planetIndices[toPlanet], count))
+                                                            .peek(i -> i.toPlanets.put(toPlanet, count))
                                             )
                             ).flatMap(Function.identity())
                             .flatMap(Function.identity()));
@@ -434,9 +431,10 @@ public class LearningAlgorithm implements ILogic {
             return this;
         }
 
-        public Stream<Move> moves() {
+        public List<Move> moves() {
             return toPlanets.entrySet().stream()
-                    .map(e -> new Move().setMoveFrom(from).setMoveTo(e.getKey()).setArmySize(e.getValue()));
+                    .map(e -> new Move().setMoveFrom(from).setMoveTo(e.getKey()).setArmySize(e.getValue()))
+                    .collect(Collectors.toList());
         }
 
         @Override

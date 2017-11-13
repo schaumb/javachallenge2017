@@ -6,8 +6,6 @@ import jsons.gamedesc.Planet;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Stream;
 
 public class PlanetState implements IOwned {
     private int planetID;
@@ -76,28 +74,11 @@ public class PlanetState implements IOwned {
     }
 
     public Army getStationedArmy(String owner) {
-        return getStationedArmies().stream().filter(army -> army.isOwns(owner)).findFirst().orElse(null);
-    }
-
-    public Army getOurStationedArmy() {
-        return stationedArmies.stream()
-                .filter(Army::isOurs)
-                .findFirst().orElse(null);
-    }
-
-    public Stream<Army> getEnemyStationedArmies() {
-        return stationedArmies.stream()
-                .filter(a -> !a.isOurs());
-    }
-
-    public Stream<Army> getOurMovingArmies() {
-        return movingArmies.stream()
-                .filter(Army::isOurs);
-    }
-
-    public Stream<Army> getMovingArmies(String who) {
-        return movingArmies.stream()
-                .filter(a -> Objects.equals(a.getOwner(), who));
+        for (Army army : getStationedArmies()) {
+            if(army.isOwns(owner))
+                return army;
+        }
+        return null;
     }
 
     @Override
