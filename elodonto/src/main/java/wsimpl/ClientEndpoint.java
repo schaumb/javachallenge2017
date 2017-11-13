@@ -60,18 +60,22 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
             System.err.println("Got an empty message");
             return;
         }
-
-        LOG.fine("Got message: " + message);
-        if (firstMessage) {
-            GameDescription gameDescription = gson.fromJson(message, GameDescription.class);
-            LOG.fine("Consumed message as description: " + gameDescription);
-            GameDescription.GAME_STARTED_MS = System.currentTimeMillis();
-            Main.logic.setGameDescription(gameDescription);
-            firstMessage = false;
-        } else {
-            GameState gameState = gson.fromJson(message, GameState.class);
-            LOG.fine("Consumed message as state: " + gameState);
-            Main.logic.setGameState(gameState);
+        try {
+            LOG.fine("Got message: " + message);
+            if (firstMessage) {
+                GameDescription gameDescription = gson.fromJson(message, GameDescription.class);
+                LOG.fine("Consumed message as description: " + gameDescription);
+                GameDescription.GAME_STARTED_MS = System.currentTimeMillis();
+                Main.logic.setGameDescription(gameDescription);
+                firstMessage = false;
+            } else {
+                GameState gameState = gson.fromJson(message, GameState.class);
+                LOG.fine("Consumed message as state: " + gameState);
+                Main.logic.setGameState(gameState);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+            throw t;
         }
     }
 

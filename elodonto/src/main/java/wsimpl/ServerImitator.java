@@ -55,7 +55,8 @@ public class ServerImitator {
                             "{\"score\":0,\"strength\":351,\"userID\":\"bot1\"}]}",
                     GameState.class);
     private final Timer timer = new Timer();
-    private GameState curr = firstGameState.copy().setMove("bot1", Collections.singletonList(new Move().setArmySize(50).setMoveFrom(101).setMoveTo(105)));
+    private GameState curr = firstGameState.copy().setMove("bot1", Collections.singletonList(new Move().setArmySize(50).setMoveFrom(101).setMoveTo(105)))
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(50).setMoveFrom(105).setMoveTo(103)), "bot1", 34);
 
     public ServerImitator() {
         Main.sender = (m, s) -> curr.setMove(s, Collections.singletonList(m));

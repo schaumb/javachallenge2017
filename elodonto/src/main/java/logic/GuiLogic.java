@@ -22,6 +22,16 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
     private Move move = new Move().setMoveFrom(-1).setMoveTo(-1);
     private JFrame frame;
     private GameState currGameState;
+    private final Integer num;
+
+    public GuiLogic() {
+        this(null);
+    }
+
+    public GuiLogic(Integer num) {
+        this.num = num;
+    }
+
 
     @Override
     public void setGameDescription(GameDescription gameDescription) {
@@ -39,9 +49,9 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
     }
 
     private Color getTransitionColor(Color from, Color to, double percent) {
-        if (percent == 0.0)
+        if (percent <= 0.0)
             return from;
-        if (percent == 1.0)
+        if (percent >= 1.0)
             return to;
 
         return new Color((int) Math.round(from.getRed() + (to.getRed() - from.getRed()) * percent),
@@ -51,8 +61,14 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
 
     private void paintTo(Graphics2D g) {
         g.setColor(Color.WHITE);
-        g.fill(g.getDeviceConfiguration().getBounds());
+        Rectangle bounds = g.getDeviceConfiguration().getBounds();
+        g.fill(bounds);
 
+        if (num != null) {
+            g.setColor(Color.CYAN);
+            g.setFont(new Font("Arial", Font.PLAIN, 1200));
+            g.drawString(num.toString(), 0, (int) bounds.getHeight());
+        }
         if (GameDescription.LATEST_INSTANCE != null) {
             if (currGameState == null) {
                 for (Planet planet : GameDescription.LATEST_INSTANCE.getPlanets()) {

@@ -11,7 +11,7 @@ import java.util.function.BiConsumer;
 
 public class Main {
     public final static Object o = new Object();
-    public static ILogic logic = LearningAlgorithm.THE_LEARNING_ALGORITHM.collapse(new GuiLogic());
+    public static ILogic logic;
     public static BiConsumer<Move, String> sender;
     public static Runnable closer = () -> {
         logic.close();
@@ -24,7 +24,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException, DeploymentException, InterruptedException {
         while (!o.equals(args)) {
-
+            logic = LearningAlgorithm.THE_LEARNING_ALGORITHM.collapse(new GuiLogic());
             ClientEndpoint.createEndpoint();
             // new ServerImitator();
 

@@ -199,6 +199,18 @@ public class GameState {
         return setAfterTime(time);
     }
 
+    public void setWhileNotMoves() {
+        int fromTick = getTickElapsed();
+
+        // no moves
+        long prevTick = fromTick;
+        long currentTick;
+        while((currentTick = getInterruptionTickOrElse(Integer.MAX_VALUE)) != Integer.MAX_VALUE) {
+            setToNextState((int) (currentTick - prevTick));
+            prevTick = currentTick;
+        }
+    }
+
     public GameState setAfterTime(long afterTime) {
         int fromTick = getTickElapsed();
 
@@ -268,7 +280,6 @@ public class GameState {
 
         HashMap<String, List<Move>> delayedMoves = GameState.delayedMoves.getOrDefault(getTickElapsed(), new HashMap<>());
         delayedMoves.forEach(this::setMove);
-        delayedMoves.clear();
 
         moveArmies(deltaTick, deltaTime);
         calculatePlanetStates(deltaTime);

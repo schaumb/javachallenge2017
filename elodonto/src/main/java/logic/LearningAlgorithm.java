@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import jsons.Move;
+import jsons.common.Helper;
 import jsons.common.PlayerExtent;
 import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
@@ -39,6 +40,7 @@ public class LearningAlgorithm implements ILogic {
             PlayerIndex>> players = new HashMap<>();
     private Boolean up;
     private Random random = new Random();
+    private final ILogic bestEndLogic = new GuiLogic(1);
 
 
     private LearningAlgorithm() {
@@ -51,6 +53,7 @@ public class LearningAlgorithm implements ILogic {
         players.clear();
         up = null;
         tick(0);
+        bestEndLogic.setGameDescription(gameDescription);
     }
 
     @Override
@@ -65,6 +68,7 @@ public class LearningAlgorithm implements ILogic {
     public void close() {
         currentGameState = null;
         prevGameState = null;
+        bestEndLogic.close();
     }
 
     private void loadState() {
@@ -90,6 +94,7 @@ public class LearningAlgorithm implements ILogic {
 
     private void tick(int tick) {
         GameDescription game = GameDescription.LATEST_INSTANCE;
+        System.err.println("Started tick: " + tick + "/" + game.getGameLengthInTick() + " - " + (System.currentTimeMillis() - GameDescription.GAME_STARTED_MS) + " aka " + Helper.tickToTime(tick));
         if (currentGameState != null) {
             if (up == null) {
                 up = currentGameState.getPlanetState(101).getStationedArmy(OUR_TEAM) != null;
@@ -173,29 +178,22 @@ public class LearningAlgorithm implements ILogic {
                 int size = ourStationedArmy.getSize();
 
                 if (size < game.getMinMovableArmySize())
-                    return;
+                    continue;
 
 
-                StateIndices state = null;
+                StateIndices state;
                 long startTime = System.currentTimeMillis();
 
                 List<StateIndices> states = createPossibles(tick, size, planetID, size,
                         game.getPlanets(), 0, 1).sorted(getSorter()).limit(10).collect(Collectors.toList());
                 state = states.get(0);
                 System.err.println("Get first took ms: " + (System.currentTimeMillis() - startTime));
+                /*
                 for (StateIndices stateIndices : states) {
                     System.err.println(stateIndices + " calcWeight: " + stateIndices.getCalculatedWeight());
-                }
+                }*/
+                bestEndLogic.setGameState(state.getState());
 
-
-                /*
-                startTime = System.currentTimeMillis();
-                ArrayList<StateIndices> list = new ArrayList<>();
-                createPossibles(list, tick, size, planetID, size, game.getPlanetIDs().toArray(), 0, 2);
-                list.sort(getSorter());
-                state = list.get(0);
-                System.err.println("Get list generate and sort took: " + (System.currentTimeMillis() - startTime));
-                */
                 state.setWeight(1.0);
 
                 state.moves().forEach(m -> m.send(OUR_TEAM));
@@ -212,7 +210,6 @@ public class LearningAlgorithm implements ILogic {
     }
 
     private Comparator<StateIndices> getSorter() {
-        GameDescription game = GameDescription.LATEST_INSTANCE;
         List<ToDoubleFunction<StateIndices>> buntik = new ArrayList<>(Arrays.asList(
                 // StateIndices::getWeight,
                 i -> 1.0,
@@ -221,12 +218,10 @@ public class LearningAlgorithm implements ILogic {
                         return i.getCalculatedWeight();
                     GameState copy = currentGameState.copy().setMove(OUR_TEAM, i.moves());
 
-                    double d = 0.0;
-                    for (int x = 0; x < 3; ++x) {
-                        d += copy.getPlayerExtent(copy.setWhileFirstArrives().getOurState()).getCurrentPossibleScore();
-                    }
+                    copy.setWhileNotMoves();
 
-                    return i.setCalculatedWeight(d).getCalculatedWeight();
+                    i.setState(copy);
+                    return i.setCalculatedWeight(copy.getOurState().getStrength()).getCalculatedWeight();
                 }));
 
         ToDoubleFunction<StateIndices> reduce = buntik.stream().reduce(i -> 1.0, (a, b) -> x -> a.applyAsDouble(x) * b.applyAsDouble(x));
@@ -362,6 +357,7 @@ public class LearningAlgorithm implements ILogic {
         private final IntUnaryOperator intUnaryOperator;
 
         private double calculatedWeight = -1;
+        private GameState state;
 
         private StateIndices(int tick, int from, int units, boolean swap, HashMap<Integer, Integer> toPlanets) {
             this.tick = tick;
@@ -420,6 +416,14 @@ public class LearningAlgorithm implements ILogic {
             } else {
                 moveStates.get(index).setWeight(weight);
             }
+        }
+
+        public GameState getState() {
+            return state;
+        }
+
+        public void setState(GameState state) {
+            this.state = state;
         }
 
         public double getCalculatedWeight() {
