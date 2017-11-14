@@ -108,11 +108,11 @@ public class BestOfEveryTimeLogic implements ILogic {
                 break;
             case 208:
                 if(!new Move().setMoveFrom(upper.applyAsInt(105)).setMoveTo(upper.applyAsInt(103)).setArmySize(5).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
-                if(!new Move().setMoveFrom(upper.applyAsInt(101)).setMoveTo(upper.applyAsInt(106)).setArmySize(5).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
+                if(!new Move().setMoveFrom(upper.applyAsInt(101)).setMoveTo(upper.applyAsInt(109)).setArmySize(5).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
                 break;
             case 234:
-                if(!new Move().setMoveFrom(upper.applyAsInt(108)).setMoveTo(upper.applyAsInt(106)).setArmySize(5).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
-                if(!new Move().setMoveFrom(upper.applyAsInt(105)).setMoveTo(upper.applyAsInt(109)).setArmySize(5).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
+                if(!new Move().setMoveFrom(upper.applyAsInt(108)).setMoveTo(upper.applyAsInt(102)).setArmySize(5).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
+                if(!new Move().setMoveFrom(upper.applyAsInt(105)).setMoveTo(upper.applyAsInt(106)).setArmySize(5).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
                 break;
             case 249:
                 if(!new Move().setMoveFrom(upper.applyAsInt(101)).setMoveTo(upper.applyAsInt(109)).setArmySize(5).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
@@ -120,6 +120,9 @@ public class BestOfEveryTimeLogic implements ILogic {
             case 269:
                 if(!new Move().setMoveFrom(upper.applyAsInt(106)).setMoveTo(upper.applyAsInt(102)).setArmySize(10).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
                 if(!new Move().setMoveFrom(upper.applyAsInt(108)).setMoveTo(upper.applyAsInt(102)).setArmySize(5).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
+                break;
+            case 289:
+                if(!new Move().setMoveFrom(upper.applyAsInt(106)).setMoveTo(upper.applyAsInt(102)).setArmySize(5).sendWithCheck(gameState, OUR_TEAM)) { System.err.println("IN TICK" + tickElapsed); }
                 break;
             default:
                 for (PlanetState planetState : gameState.getPlanetStates()) {
