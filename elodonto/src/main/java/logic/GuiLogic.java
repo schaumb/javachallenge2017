@@ -1,6 +1,7 @@
 package logic;
 
 import jsons.Move;
+import jsons.common.Helper;
 import jsons.common.Positioned;
 import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
@@ -9,12 +10,16 @@ import jsons.gamestate.GameState;
 import jsons.gamestate.PlanetState;
 import jsons.gamestate.PlayerState;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,8 +49,14 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
     public void setGameState(GameState gameState) {
         this.currGameState = gameState;
 
-        frame.revalidate();
-        frame.repaint();
+        if(frame != null) {
+            frame.revalidate();
+            frame.repaint();
+
+            //if(gameState.getTickElapsed() > 145) {
+                save(gameState.getTickElapsed());
+            //}
+        }
     }
 
     private Color getTransitionColor(Color from, Color to, double percent) {
@@ -58,6 +69,23 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                 (int) Math.round(from.getGreen() + (to.getGreen() - from.getGreen()) * percent),
                 (int) Math.round(from.getBlue() + (to.getBlue() - from.getBlue()) * percent));
     }
+
+    public void save(int tick)
+    {
+        BufferedImage bImg = new BufferedImage(frame.getWidth(), frame.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D cg = bImg.createGraphics();
+        frame.paintAll(cg);
+        try {
+            if (ImageIO.write(bImg, "png", new File("./" + tick + ".png")))
+            {
+                System.out.println("-- saved");
+            }
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
 
     private void paintTo(Graphics2D g) {
         g.setColor(Color.WHITE);
@@ -77,6 +105,10 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                             planet.getRadius() * 2, planet.getRadius() * 2, 0, 360);
                 }
             } else {
+                g.setColor(Color.CYAN);
+                g.setFont(new Font("Arial", Font.PLAIN, 30));
+                g.drawString(Helper.timeToTick(currGameState.getTimeElapsed()) + "/" + GameDescription.LATEST_INSTANCE.getGameLengthInTick(), 0,
+                        30);
                 for (PlanetState planetState : currGameState.getPlanetStates()) {
                     Planet planet = planetState.getAsPlanet();
 
@@ -88,8 +120,8 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                     g.fillArc(planet.getX() - planet.getRadius(), planet.getY() - planet.getRadius(),
                             planet.getRadius() * 2, planet.getRadius() * 2, 0, 360);
                     g.setFont(new Font("Arial", Font.PLAIN, 20));
-                    g.setColor(Color.BLACK);
-                    g.drawString(planetState.getPlanetID() + "", planet.getX() - planet.getRadius() * 2 / 3, planet.getY() + planet.getRadius() / 4);
+                    g.setColor(planetState.isOurs() ? Color.CYAN: planetState.hasOwner() ? Color.PINK : Color.DARK_GRAY);
+                    g.drawString(planetState.getPlanetID() + " " + (int) (100 * planetState.getOwnershipRatio()), planet.getX() - planet.getRadius(), planet.getY() + planet.getRadius() / 4);
                 }
                 for (PlanetState planetState : currGameState.getPlanetStates()) {
                     Planet planet = planetState.getAsPlanet();
@@ -113,9 +145,7 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
                         g.drawString("" + army.getSize(), army.getX().intValue(), army.getY().intValue());
                     }
                 }
-
             }
-
         }
 
     }

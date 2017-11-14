@@ -6,6 +6,7 @@ import jsons.gamedesc.GameDescription;
 import jsons.gamestate.GameState;
 import jsons.gamestate.GameStatus;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -56,7 +57,24 @@ public class ServerImitator {
                     GameState.class);
     private final Timer timer = new Timer();
     private GameState curr = firstGameState.copy().setMove("bot1", Collections.singletonList(new Move().setArmySize(50).setMoveFrom(101).setMoveTo(105)))
-            .setDelayedMove(Collections.singletonList(new Move().setArmySize(50).setMoveFrom(105).setMoveTo(103)), "bot1", 34);
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(50).setMoveFrom(105).setMoveTo(103)), "bot1", 35)
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(5).setMoveFrom(101).setMoveTo(108)), "bot1", 42)
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(50).setMoveFrom(103).setMoveTo(110)), "bot1", 69)
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(5).setMoveFrom(101).setMoveTo(108)), "bot1", 83)
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(5).setMoveFrom(105).setMoveTo(108)), "bot1", 84)
+            .setDelayedMove(Arrays.asList(new Move().setArmySize(14).setMoveFrom(110).setMoveTo(103),
+                    new Move().setArmySize(36).setMoveFrom(110).setMoveTo(108)), "bot1", 114)
+            .setDelayedMove(Arrays.asList(new Move().setArmySize(6).setMoveFrom(103).setMoveTo(101),
+                    new Move().setArmySize(5).setMoveFrom(103).setMoveTo(105)), "bot1", 144)
+            .setDelayedMove(Arrays.asList(new Move().setArmySize(17).setMoveFrom(108).setMoveTo(105),
+                    new Move().setArmySize(16).setMoveFrom(108).setMoveTo(106)), "bot1", 146)
+
+
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(5).setMoveFrom(110).setMoveTo(104)), "bot1", 156)
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(5).setMoveFrom(101).setMoveTo(109)), "bot1", 169)
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(15).setMoveFrom(106).setMoveTo(104)), "bot1", 171)
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(13).setMoveFrom(104).setMoveTo(106)), "bot1", 193)
+            .setDelayedMove(Collections.singletonList(new Move().setArmySize(5).setMoveFrom(110).setMoveTo(105)), "bot1", 197);
 
     public ServerImitator() {
         Main.sender = (m, s) -> curr.setMove(s, Collections.singletonList(m));
@@ -85,6 +103,6 @@ public class ServerImitator {
                     Main.closer.run();
                 }
             }
-        }, gameDescription.getBroadcastSchedule(), gameDescription.getBroadcastSchedule());
+        }, gameDescription.getBroadcastSchedule() / 2, gameDescription.getBroadcastSchedule() / 2);
     }
 }

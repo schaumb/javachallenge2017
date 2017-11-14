@@ -65,7 +65,6 @@ public class ClientEndpoint extends Endpoint implements MessageHandler.Whole<Str
             if (firstMessage) {
                 GameDescription gameDescription = gson.fromJson(message, GameDescription.class);
                 LOG.fine("Consumed message as description: " + gameDescription);
-                GameDescription.GAME_STARTED_MS = System.currentTimeMillis();
                 Main.logic.setGameDescription(gameDescription);
                 firstMessage = false;
             } else {

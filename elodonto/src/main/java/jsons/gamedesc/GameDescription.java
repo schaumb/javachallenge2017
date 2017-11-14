@@ -30,6 +30,7 @@ public class GameDescription {
 
     public GameDescription() {
         planetMap.clear();
+        GAME_STARTED_MS = System.currentTimeMillis();
         LATEST_INSTANCE = this;
     }
 

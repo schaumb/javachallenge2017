@@ -1,6 +1,7 @@
 package wsimpl;
 
 import jsons.Move;
+import logic.BestOfEveryTimeLogic;
 import logic.GuiLogic;
 import logic.ILogic;
 import logic.LearningAlgorithm;
@@ -24,7 +25,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException, DeploymentException, InterruptedException {
         while (!o.equals(args)) {
-            logic = LearningAlgorithm.THE_LEARNING_ALGORITHM.collapse(new GuiLogic());
+            logic = new BestOfEveryTimeLogic().collapse(new GuiLogic());
             ClientEndpoint.createEndpoint();
             // new ServerImitator();
 

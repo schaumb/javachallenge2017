@@ -1,6 +1,8 @@
 package jsons;
 
 import com.google.gson.Gson;
+import jsons.gamestate.Army;
+import jsons.gamestate.GameState;
 import wsimpl.Main;
 
 public class Move {
@@ -38,6 +40,20 @@ public class Move {
 
     public void send(String who) {
         Main.sender.accept(this, who);
+    }
+
+    public boolean sendWithCheck(GameState state, String who) {
+        boolean success = false;
+        Army stationedArmy = state.getPlanetState(moveFrom).getStationedArmy(who);
+        if(stationedArmy == null) {
+            System.err.println("NO STATIONED ARMY AT CHECKED MOVE");
+        } else if(stationedArmy.getSize() < armySize) {
+            System.err.println("NOT ENOUGH STATIONED ARMY AT CHECKED MOVE " + armySize + " but was: " + stationedArmy.getSize());
+        } else {
+            success = true;
+        }
+        Main.sender.accept(this, who);
+        return success;
     }
 
     @Override

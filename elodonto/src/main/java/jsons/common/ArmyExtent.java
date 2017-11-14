@@ -12,13 +12,22 @@ public class ArmyExtent {
     private final Army army;
     private final Planet toPlanet;
     private final long toTime;
+    private final long timeElapsed;
     private Planet fromPlanet;
     private Long fromTime;
 
     public ArmyExtent(GameState gameState, PlanetState state, Army army) {
         this.army = army;
         this.toPlanet = state.getAsPlanet();
-        this.toTime = gameState.getTimeElapsed() + (long) Helper.timeToMoveWithoutCeil(army, toPlanet);
+        this.timeElapsed = gameState.getTimeElapsed();
+        long toTime = timeElapsed + (long) Helper.timeToMoveWithoutCeil(army, toPlanet);
+
+        int broadcastSchedule = GameDescription.LATEST_INSTANCE.getBroadcastSchedule();
+        if(toTime % broadcastSchedule != 0) {
+            toTime += broadcastSchedule - (toTime % broadcastSchedule);
+        }
+
+        this.toTime = toTime;
     }
 
     public Army getArmy() {
@@ -27,7 +36,7 @@ public class ArmyExtent {
 
     public long getFromTime() {
         if (fromTime == null && army.isInMove()) {
-            fromTime = toTime - (long) Helper.timeToMoveWithoutCeil(getFromPlanet(), toPlanet);
+            fromTime = timeElapsed - (long) Helper.timeToMoveWithoutCeil(getFromPlanet(), army);
         }
         return fromTime;
     }
@@ -86,10 +95,12 @@ public class ArmyExtent {
     public String toString() {
         return "ArmyExtent{" +
                 "army=" + army +
-                ", toPlanet=" + toPlanet +
-                ", toTime=" + toTime +
                 ", fromPlanet=" + fromPlanet +
                 ", fromTime=" + fromTime +
+                ", fromTick=" + getFromTick() +
+                ", toPlanet=" + toPlanet +
+                ", toTime=" + toTime +
+                ", toTick=" + getToTick() +
                 '}';
     }
 }

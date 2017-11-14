@@ -170,9 +170,7 @@ public class GameState {
             if (ourStationedArmy == null)
                 continue;
 
-            int sentProbably = Math.min(ourStationedArmy.getSize(), move.getArmySize());
-
-            ourStationedArmy.setSize(ourStationedArmy.getRealSize() - sentProbably);
+            ourStationedArmy.setSize(ourStationedArmy.getRealSize() - move.getArmySize());
 
             double time = Helper.timeToMoveWithoutCeil(planetStateFrom.getAsPlanet(), planetStateTo.getAsPlanet());
             Positioned<Double> doublePositioned = planetStateFrom.getAsPlanet().goesTo(planetStateTo.getAsPlanet(),
@@ -180,7 +178,7 @@ public class GameState {
 
             Army army = new Army();
             army.setOwner(ourStationedArmy.getOwner())
-                    .setSize(sentProbably)
+                    .setSize(move.getArmySize())
                     .setX(doublePositioned.getX())
                     .setY(doublePositioned.getY());
 
@@ -281,22 +279,22 @@ public class GameState {
         HashMap<String, List<Move>> delayedMoves = GameState.delayedMoves.getOrDefault(getTickElapsed(), new HashMap<>());
         delayedMoves.forEach(this::setMove);
 
-        moveArmies(deltaTick, deltaTime);
+        moveArmies(deltaTime);
         calculatePlanetStates(deltaTime);
         return this;
     }
 
-    private void moveArmies(int deltaTick, int deltaTime) {
+    private void moveArmies(int deltaTime) {
         // mozgó seregek
         for (PlanetState planetState : getPlanetStates()) {
             Iterator<Army> iterator = planetState.getMovingArmies().iterator();
             while (iterator.hasNext()) {
                 Army army = iterator.next();
                 ArmyExtent armyExtent = getArmyExtent(planetState, army);
-                int toTick = getTickElapsed() + deltaTick;
-                if (armyExtent.getToTick() <= toTick) {
-                    if (armyExtent.getToTick() < toTick) {
-                        System.err.println("BAD DELTA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                int toTime = getTimeElapsed() + deltaTime;
+                if (armyExtent.getToTime() <= toTime) {
+                    if (armyExtent.getToTime() < toTime) {
+                        System.err.println("BAD DELTA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" + armyExtent.getToTime() + " " + toTime);
                     }
                     // megérkeztetés
 
