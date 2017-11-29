@@ -1,0 +1,22 @@
+containers:
+  java:
+    setup:
+      - !Ubuntu xenial
+      - !UbuntuUniverse
+      - !Install [openjdk-8-jdk-headless, wget, maven]
+    volumes:
+      /root: !Tmpfs
+        size: 100Mi
+        mode: 0o1777
+        subdirs:
+          .m2: #
+
+commands:
+  build: !Command
+    description: "Build program"
+    container: java
+    work-dir: /tmp
+    run: |
+      cp -r /work/* .
+      mvn package
+      cp /tmp/target/javachallenge-jar-with-dependencies.jar /work
