@@ -52,10 +52,6 @@ public class GuiLogic extends MouseAdapter implements ILogic, KeyListener {
         if(frame != null) {
             frame.revalidate();
             frame.repaint();
-
-            //if(gameState.getTickElapsed() > 145) {
-                save(gameState.getTickElapsed());
-            //}
         }
     }
 
