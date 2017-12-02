@@ -102,8 +102,8 @@ public class BestOfEveryTimeLogic implements ILogic {
                         continue;
                     }
                     int armyToSend = army.getSize();
-                    if (!shouldWeRun && army.getSize() > 50) {
-                        armyToSend = army.getSize() - 5;
+                    if (!shouldWeRun && army.getSize() > 50 && (army.getSize() - ps.biggestEnemyArmySizeWhichArrives()) >= 20) {
+                        armyToSend = army.getSize() - ps.biggestEnemyArmySizeWhichArrives();
                     }
                     new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(planets.get(0).getPlanetID()).setArmySize(armyToSend).sendWithCheck(gameState, OUR_TEAM);
                 }

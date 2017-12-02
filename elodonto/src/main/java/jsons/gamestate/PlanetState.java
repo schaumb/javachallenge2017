@@ -3,9 +3,9 @@ package jsons.gamestate;
 import jsons.common.IOwned;
 import jsons.gamedesc.GameDescription;
 import jsons.gamedesc.Planet;
+import logic.ILogic;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class PlanetState implements IOwned {
     private int planetID;
@@ -89,6 +89,22 @@ public class PlanetState implements IOwned {
         PlanetState that = (PlanetState) o;
 
         return planetID == that.planetID;
+    }
+
+    public int biggestEnemyArmySizeWhichArrives() {
+        Map<String, Integer> armies = new HashMap<>();
+
+        for (Army army : getMovingArmies()) {
+            armies.compute(army.getOwner(), (k, v) -> {
+                if(v == null)
+                    return army.getSize();
+                return v + army.getSize();
+            });
+        }
+
+        return armies.entrySet().stream().filter(i -> !Objects.equals(i.getKey(), ILogic.OUR_TEAM))
+            .mapToInt(Map.Entry::getValue)
+            .max().orElse(0);
     }
 
     @Override
