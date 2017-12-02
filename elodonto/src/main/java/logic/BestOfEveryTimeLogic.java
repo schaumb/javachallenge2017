@@ -37,9 +37,7 @@ public class BestOfEveryTimeLogic implements ILogic {
                 .filter(pl -> !pl.isOurs() || pl.getOwnershipRatio() < 1.0)
                 .sorted(Comparator.comparingDouble((PlanetState p) -> planetsWeight.computeIfAbsent(p, pl -> {
 
-                    boolean b = Helper.planetMyWeightIsGood(gameState, pl, x);
-
-                    boolean isGoodForMe = b;
+                    boolean isGoodForMe = Helper.planetMyWeightIsGood(gameState, pl, x);
                     double weight = (isGoodForMe ? 1 : 10000000) * Helper.timeToMoveWithoutCeil(origPlanet.getAsPlanet(), pl.getAsPlanet());
 
                     return weight;
@@ -57,6 +55,54 @@ public class BestOfEveryTimeLogic implements ILogic {
         Collections.sort(states, (lhs, rhs) -> (int)(Helper.timeToMoveWithoutCeil(
             lhs.getAsPlanet(), origPlanet.getAsPlanet()) - Helper.timeToMoveWithoutCeil(rhs.getAsPlanet(), origPlanet.getAsPlanet())));
         return states;
+    }
+
+    public int getBiggestOurArmy(GameState gameState) {
+        int biggestOurArmy = 0;
+        for (PlanetState ps : gameState.getPlanetStates()) {
+            for (Army army : ps.getStationedArmies()) {
+                if (army.isOurs() && army.getSize() > biggestOurArmy) {
+                    biggestOurArmy = army.getSize();
+                }
+            }
+            for (Army army : ps.getMovingArmies()) {
+                if (army.isOurs() && army.getSize() > biggestOurArmy) {
+                    biggestOurArmy = army.getSize();
+                }
+            }
+        }
+        return biggestOurArmy;
+    }
+
+    public int getBiggestEnemyArmy(GameState gameState) {
+        int biggestOurArmy = 0;
+        for (PlanetState ps : gameState.getPlanetStates()) {
+            for (Army army : ps.getStationedArmies()) {
+                if (!army.isOurs() && army.getSize() > biggestOurArmy) {
+                    biggestOurArmy = army.getSize();
+                }
+            }
+            for (Army army : ps.getMovingArmies()) {
+                if (!army.isOurs() && army.getSize() > biggestOurArmy) {
+                    biggestOurArmy = army.getSize();
+                }
+            }
+        }
+        return biggestOurArmy;
+    }
+
+    public PlanetState getBiggestPlanet(GameState gameState) {
+        PlanetState biggestPlanet = null;
+        int biggestR = 0;
+        for (PlanetState ps : gameState.getPlanetStates()) {
+            int r = ps.getAsPlanet().getRadius();
+            if (r > biggestR) {
+                biggestR = r;
+                biggestPlanet = ps;
+            }
+        }
+
+        return biggestPlanet;
     }
 
     @Override
@@ -84,6 +130,10 @@ public class BestOfEveryTimeLogic implements ILogic {
             return;
         }
 
+        int ourBiggestArmy = getBiggestOurArmy(gameState);
+        int enemyBiggestArmy = getBiggestEnemyArmy(gameState);
+        boolean weHaveBiggestArmy = ourBiggestArmy > enemyBiggestArmy;
+
         for (PlanetState ps : gameState.getPlanetStates()) {
             for (Army army : ps.getStationedArmies()) {
                 if (!army.isOurs()) {
@@ -110,6 +160,14 @@ public class BestOfEveryTimeLogic implements ILogic {
                     }
                     if(shouldWeRun) {
                         System.err.println("SHOUD WE RUN TRUE");
+                    }
+                    if (weHaveBiggestArmy && ourBiggestArmy == army.getSize()) {
+                        PlanetState biggestPlanet = getBiggestPlanet(gameState);
+                        if (biggestPlanet.getOwnershipRatio() < 1.0) {
+                            System.err.println("GoToBiggestPlanet");
+                            new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(biggestPlanet.getPlanetID()).setArmySize(army.getSize()).sendWithCheck(gameState, OUR_TEAM);
+                            continue;
+                        }
                     }
                     List<PlanetState> planets = getTargetPlanets(gameState, ps, army.getSize());
                     if (planets.size() == 0) {
