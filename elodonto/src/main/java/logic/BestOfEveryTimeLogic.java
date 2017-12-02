@@ -8,6 +8,7 @@ import jsons.gamestate.GameState;
 import jsons.gamestate.PlanetState;
 
 import java.util.function.IntUnaryOperator;
+import java.util.*;
 
 public class BestOfEveryTimeLogic implements ILogic {
 
@@ -25,6 +26,16 @@ public class BestOfEveryTimeLogic implements ILogic {
 
     }
 
+    ArrayList<PlanetState> getTargetPlanets(GameState gameState, int threshold) {
+        ArrayList<PlanetState> states = new ArrayList<PlanetState>();
+        for (PlanetState ps : gameState.getPlanetStates()) {
+            if (ps.getStationedArmies().size() < threshold) {
+                states.add(ps);
+            }
+        }
+        return states;
+    }
+
     @Override
     public void setGameState(GameState gameState) {
         int tickElapsed = gameState.getTickElapsed();
@@ -32,23 +43,15 @@ public class BestOfEveryTimeLogic implements ILogic {
             init(gameState);
         }
 
-        PlanetState targetPlanet = null;
-        for (PlanetState ps : gameState.getPlanetStates()) {
-            if (ps.getStationedArmies().size() == 0) {
-                targetPlanet = ps;
-                break;
-            }
-        }
-
-        if (targetPlanet == null) {
-            System.err.println("IN TICK " + tickElapsed + " no more empty planets");
-            return;
-        }
 
         for (PlanetState ps : gameState.getPlanetStates()) {
             for (Army army : ps.getStationedArmies()) {
                 if (army.isOurs()) {
-                    new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(targetPlanet.getPlanetID()).setArmySize(army.getSize()).sendWithCheck(gameState, OUR_TEAM);
+                    ArrayList<PlanetState> planets = getTargetPlanets(gameState, army.getSize());
+                    if (planets.size() == 0) {
+                        continue;
+                    }
+                    new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(planets.get(0).getPlanetID()).setArmySize(army.getSize()).sendWithCheck(gameState, OUR_TEAM);
                 }
             }
         }
