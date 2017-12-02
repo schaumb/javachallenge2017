@@ -88,6 +88,7 @@ public class BestOfEveryTimeLogic implements ILogic {
             boolean shouldWeRun = !Helper.planetMyWeightIsGood(gameState, ps, 0);
 
             for (Army army : ps.getStationedArmies()) {
+                System.out.println("Should we run id:" + ps.getPlanetID() + " " + shouldWeRun);
                 if (army.isOurs() && ((ps.getOwnershipRatio() >= 1.0 && ps.getStationedArmies().size() == 1) || shouldWeRun)) {
                     if(shouldWeRun) {
                         System.err.println("SHOUD WE RUN TRUE");
