@@ -139,4 +139,23 @@ public class PlanetState implements IOwned {
                 .mapToInt(Map.Entry::getValue)
                 .max().orElse(0);
     }
+
+    public int getOurSumMovingArmies() {
+        int armies = 0;
+        for (Army army : getMovingArmies()) {
+            if(army.isOurs()) {
+                armies += army.getSize();
+            }
+        }
+        return armies;
+    }
+
+    public double getOurSumStationedArmies() {
+        for (Army army : getMovingArmies()) {
+            if(army.isOurs()) {
+                return army.getSize();
+            }
+        }
+        return 0;
+    }
 }

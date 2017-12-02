@@ -165,7 +165,11 @@ public class Helper {
         Double ourWeight = factions.get(ILogic.OUR_TEAM);
 
         if(ourWeight == null) {
-            return false;
+            if(x != 0) {
+                ourWeight = (double) x;
+            } else {
+                return false;
+            }
         }
 
         ourWeight += x;
