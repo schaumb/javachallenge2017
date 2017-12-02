@@ -40,8 +40,7 @@ public class BestOfEveryTimeLogic implements ILogic {
                     boolean isGoodForMe = Helper.planetMyWeightIsGood(gameState, pl, x);
                     double mulIfUncharted = !pl.hasOwner() ? 0.8 : 1.0;
 
-                    double mulIfOur = pl.isOurs() ? Math.max(1.0, (pl.getOurSumStationedArmies() + pl.getOurSumMovingArmies() -
-                            pl.biggestEnemyArmySizeWhichArrives() - pl.biggestEnemyArmySizeWhichIsHere()) * 100.0) : 1.0;
+                    double mulIfOur = pl.isOurs() ? 1.0: 1.0;
 
 
                     double weight = (isGoodForMe ? 1 : 10000000) * Helper.timeToMoveWithoutCeil(origPlanet.getAsPlanet(), pl.getAsPlanet()) * mulIfUncharted * mulIfOur;
