@@ -49,6 +49,18 @@ public class BestOfEveryTimeLogic implements ILogic {
         return states;
     }
 
+    ArrayList<PlanetState> getEmptyPlanets(GameState gameState, PlanetState origPlanet) {
+        ArrayList<PlanetState> states = new ArrayList<PlanetState>();
+        for (PlanetState empty_ps : gameState.getPlanetStates()) {
+            if (empty_ps.getStationedArmies().size() == 0) {
+                states.add(empty_ps);
+            }
+        }
+        Collections.sort(states, (lhs, rhs) -> (int)(Helper.timeToMoveWithoutCeil(
+            lhs.getAsPlanet(), origPlanet.getAsPlanet()) - Helper.timeToMoveWithoutCeil(rhs.getAsPlanet(), origPlanet.getAsPlanet())));
+        return states;
+    }
+
     @Override
     public void setGameState(GameState gameState) {
         int tickElapsed = gameState.getTickElapsed();
@@ -62,7 +74,7 @@ public class BestOfEveryTimeLogic implements ILogic {
                 for (Army army : ps.getStationedArmies()) {
                     if (army.isOurs()) {
                         int armySize = army.getSize();
-                        for (PlanetState empty_ps : gameState.getPlanetStates()) {
+                        for (PlanetState empty_ps : getEmptyPlanets(gameState, ps)) {
                             if (empty_ps.getStationedArmies().size() == 0 && armySize >= splitSize) {
                                 new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(empty_ps.getPlanetID()).setArmySize(splitSize).sendWithCheck(gameState, OUR_TEAM);
                                 armySize -= splitSize;
