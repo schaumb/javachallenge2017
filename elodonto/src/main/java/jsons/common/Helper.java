@@ -2,6 +2,9 @@ package jsons.common;
 
 import jsons.gamedesc.GameDescription;
 import jsons.gamestate.Army;
+import jsons.gamestate.GameState;
+import jsons.gamestate.PlanetState;
+import logic.ILogic;
 
 import java.util.HashMap;
 import java.util.List;
@@ -62,13 +65,21 @@ public class Helper {
             sum = 0;
             hasUnit = 0;
             for (Map.Entry<String, Double> e : collect.entrySet()) {
+                if(e.getValue().intValue() == 0)
+                    continue;
+
                 double next = e.getValue() - gameDescription.getBattleSpeed() *
                         Math.pow(prevSum - e.getValue(), gameDescription.getBattleExponent())
                         / prevSum / 1000 * gameDescription.getInternalSchedule();
-                e.setValue(next);
-                sum += next;
-                if ((int) next > 0)
+
+                if((int)next == 0) {
+                    e.setValue(0.0);
+
+                } else {
+                    e.setValue(next);
+                    sum += next;
                     ++hasUnit;
+                }
             }
         }
         return currentTime;
@@ -116,5 +127,41 @@ public class Helper {
 
     public static double planetWeight(int radius, boolean owns, double amount) {
         return (owns ? amount : 0) * Math.pow(radius, GameDescription.LATEST_INSTANCE.getPlanetExponent());
+    }
+
+
+    public static boolean planetMyWeightIsGood(GameState gameState, PlanetState planetState) {
+        Map<String, Double> factions = new HashMap<>();
+
+        for (Army army : planetState.getStationedArmies()) {
+            factions.compute(army.getOwner(), (k, v) -> {
+                if(v == null)
+                    return (double) army.getSize();
+                return v + army.getSize();
+            });
+        }
+
+        for (Army army : planetState.getMovingArmies()) {
+            factions.compute(army.getOwner(), (k, v) -> {
+                ArmyExtent armyExtent = gameState.getArmyExtent(planetState, army);
+                double mult = (armyExtent.getToTick() + 1 - gameState.getTickElapsed()) * 0.5;
+
+                if(v == null)
+                    return army.getSize() / mult;
+                return v + army.getSize() / mult;
+            });
+        }
+
+        Double ourWeight = factions.get(ILogic.OUR_TEAM);
+
+        if(ourWeight == null)
+            return false;
+
+        for (Map.Entry<String, Double> stringDoubleEntry : factions.entrySet()) {
+            if(stringDoubleEntry.getValue() > ourWeight)
+                return false;
+        }
+
+        return true;
     }
 }

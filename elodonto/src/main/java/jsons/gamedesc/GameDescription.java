@@ -48,9 +48,7 @@ public class GameDescription {
 
     public Planet getPlanet(int id) {
         if (planetMap.isEmpty()) {
-            getPlanets().forEach(p -> {
-                planetMap.put(p.getPlanetID(), p);
-            });
+            getPlanets().forEach(p -> planetMap.put(p.getPlanetID(), p));
         }
         return planetMap.get(id);
     }
