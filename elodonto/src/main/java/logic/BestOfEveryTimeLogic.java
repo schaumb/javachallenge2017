@@ -11,6 +11,7 @@ import jsons.gamestate.PlanetState;
 
 import java.util.function.IntUnaryOperator;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class BestOfEveryTimeLogic implements ILogic {
 
@@ -28,47 +29,19 @@ public class BestOfEveryTimeLogic implements ILogic {
 
     }
 
-    ArrayList<PlanetState> getTargetPlanets(GameState gameState, PlanetState origPlanet, int threshold) {
-        ArrayList<PlanetState> states = new ArrayList<PlanetState>();
-        for (PlanetState ps : gameState.getPlanetStates()) {
-            if (ps.getOwnershipRatio() >= 1.0) {
-                continue;
-            }
-            int enemyArmySize = 0;
-            for (Army army : ps.getStationedArmies()) {
-                if (!army.isOurs()) {
-                    enemyArmySize += army.getSize();
-                }
-            }
-            if (enemyArmySize < threshold) {
-                states.add(ps);
-            }
-        }
-        Collections.sort(states, (lhs, rhs) -> (int)(Helper.timeToMoveWithoutCeil(
-            lhs.getAsPlanet(), origPlanet.getAsPlanet()) - Helper.timeToMoveWithoutCeil(rhs.getAsPlanet(), origPlanet.getAsPlanet())));
-
-        int minArmy = 100000;
-        PlanetState minPlanet = null;
-        for (PlanetState ps : gameState.getPlanetStates()) {
-            int enemyArmySize = 0;
-            for (Army army : ps.getStationedArmies()) {
-                if (!army.isOurs()) {
-                    enemyArmySize += army.getSize();
-                }
-            }
-            if (enemyArmySize < minArmy) {
-                minArmy = enemyArmySize;
-                minPlanet = ps;
-            }
-        }
-        if (minPlanet != null) {
-            states.add(minPlanet);
-        }
-        return states;
+    List<PlanetState> getTargetPlanets(GameState gameState, PlanetState origPlanet, int x) {
+        Map<PlanetState, Double> planetsWeight = new HashMap<>();
+        return gameState.getPlanetStates()
+                .stream()
+                .filter(p -> p != origPlanet)
+                .sorted(Comparator.comparingDouble((PlanetState p) -> planetsWeight.computeIfAbsent(p, pl -> {
+                    return (Helper.planetMyWeightIsGood(gameState, pl) ? -1 : -10000) * Helper.timeToMoveWithoutCeil(origPlanet.getAsPlanet(), pl.getAsPlanet());
+                })).reversed())
+                .collect(Collectors.toList());
     }
 
     ArrayList<PlanetState> getEmptyPlanets(GameState gameState, PlanetState origPlanet) {
-        ArrayList<PlanetState> states = new ArrayList<PlanetState>();
+        ArrayList<PlanetState> states = new ArrayList<>();
         for (PlanetState empty_ps : gameState.getPlanetStates()) {
             if (empty_ps.getStationedArmies().size() == 0) {
                 states.add(empty_ps);
@@ -108,7 +81,7 @@ public class BestOfEveryTimeLogic implements ILogic {
             boolean shouldWeRun = !Helper.planetMyWeightIsGood(gameState, ps);
             for (Army army : ps.getStationedArmies()) {
                 if (army.isOurs() && ((ps.getOwnershipRatio() >= 1.0 && ps.getStationedArmies().size() == 1) || shouldWeRun)) {
-                    ArrayList<PlanetState> planets = getTargetPlanets(gameState, ps, army.getSize());
+                    List<PlanetState> planets = getTargetPlanets(gameState, ps, army.getSize());
                     if (planets.size() == 0) {
                         System.out.println("No target planets :(");
                         continue;
