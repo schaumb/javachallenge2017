@@ -52,9 +52,10 @@ public class Helper {
         double sum = 0;
         for (Army army : armies) {
             collect.put(army.getOwner(), army.getRealSize());
-            if (army.getSize() > 0)
+            if (army.getSize() > 0) {
                 ++hasUnit;
-            sum += army.getRealSize();
+                sum += army.getRealSize();
+            }
         }
 
         GameDescription gameDescription = GameDescription.LATEST_INSTANCE;
@@ -91,9 +92,10 @@ public class Helper {
         double sum = 0;
         for (Army army : armies) {
             collect.put(army.getOwner(), army.getRealSize());
-            if (army.getSize() > 0)
+            if (army.getSize() > 0) {
                 ++hasUnit;
-            sum += army.getRealSize();
+                sum += army.getRealSize();
+            }
         }
 
 
@@ -105,13 +107,21 @@ public class Helper {
             sum = 0;
             hasUnit = 0;
             for (Map.Entry<String, Double> e : collect.entrySet()) {
+                if(e.getValue().intValue() == 0)
+                    continue;
+
                 double next = e.getValue() - gameDescription.getBattleSpeed() *
                         Math.pow(prevSum - e.getValue(), gameDescription.getBattleExponent())
                         / prevSum / 1000 * gameDescription.getInternalSchedule();
-                e.setValue(next);
-                sum += next;
-                if ((int) next > 0)
+
+                if((int)next == 0) {
+                    e.setValue(0.0);
+
+                } else {
+                    e.setValue(next);
+                    sum += next;
                     ++hasUnit;
+                }
             }
         }
         return collect;
