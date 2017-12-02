@@ -38,7 +38,8 @@ public class BestOfEveryTimeLogic implements ILogic {
                 .sorted(Comparator.comparingDouble((PlanetState p) -> planetsWeight.computeIfAbsent(p, pl -> {
 
                     boolean isGoodForMe = Helper.planetMyWeightIsGood(gameState, pl, x);
-                    double weight = (isGoodForMe ? 1 : 10000000) * Helper.timeToMoveWithoutCeil(origPlanet.getAsPlanet(), pl.getAsPlanet());
+                    double mulIfUncharted = !pl.hasOwner() ? 0.8 : 1.0;
+                    double weight = (isGoodForMe ? 1 : 10000000) * Helper.timeToMoveWithoutCeil(origPlanet.getAsPlanet(), pl.getAsPlanet()) * mulIfUncharted;
 
                     return weight;
                 })))
@@ -147,11 +148,12 @@ public class BestOfEveryTimeLogic implements ILogic {
                     if((ps.getOwnershipRatio() >= 1.0 && ps.getStationedArmies().size() == 1)) {
                         boolean shouldWeStay = false;
 
-                        if(army.getSize() - ps.biggestEnemyArmySizeWhichArrives() < 10) {
+                        int diff1 = army.getSize() - ps.biggestEnemyArmySizeWhichArrives();
+                        if(diff1 >= 0 && diff1 < 10) {
                             shouldWeStay = true;
                         }
-                        int diff = army.getSize() - ps.biggestEnemyArmySizeWhichIsHere();
-                        if(diff > 0 && diff < 10) {
+                        int diff2 = army.getSize() - ps.biggestEnemyArmySizeWhichIsHere();
+                        if(diff2 >= 0 && diff2 < 10) {
                             shouldWeStay = true;
                         }
 
