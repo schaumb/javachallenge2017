@@ -179,11 +179,20 @@ public class BestOfEveryTimeLogic implements ILogic {
                     if (army.getSize() < (shouldWeRun ? 5 : 10)) {
                         continue;
                     }
-                    int armyToSend = army.getSize();
-                    if (!shouldWeRun && army.getSize() > 50 && (army.getSize() - ps.biggestEnemyArmySizeWhichArrives()) >= 20) {
-                        armyToSend = army.getSize() - ps.biggestEnemyArmySizeWhichArrives();
+                    int splitTeams = 1;
+                    if (army.getSize() > 99 && planets.size() > 1) {
+                        splitTeams = 2;
                     }
-                    new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(planets.get(0).getPlanetID()).setArmySize(armyToSend).sendWithCheck(gameState, OUR_TEAM);
+                    if (army.getSize() > 199 && planets.size() > 2) {
+                        splitTeams = 3;
+                    }
+                    for (int i=0; i<splitTeams; ++i) {
+                        int armyToSend = army.getSize() / splitTeams;
+                        if (!shouldWeRun && armyToSend > 50 && (armyToSend - ps.biggestEnemyArmySizeWhichArrives()) >= 20) {
+                            armyToSend = armyToSend - ps.biggestEnemyArmySizeWhichArrives();
+                        }
+                        new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(planets.get(i).getPlanetID()).setArmySize(armyToSend).sendWithCheck(gameState, OUR_TEAM);
+                    }
                 }
             }
         }
