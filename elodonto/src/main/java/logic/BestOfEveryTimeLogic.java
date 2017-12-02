@@ -101,7 +101,7 @@ public class BestOfEveryTimeLogic implements ILogic {
             }
             shouldWeRun = largestEnemyArmySize > ourArmySize;
             for (Army army : ps.getStationedArmies()) {
-                if (army.isOurs() && ps.getOwnershipRatio() >= 1.0 || shouldWeRun) {
+                if (army.isOurs() && ((ps.getOwnershipRatio() >= 1.0 && ps.getStationedArmies().size() == 1) || shouldWeRun)) {
                     ArrayList<PlanetState> planets = getTargetPlanets(gameState, ps, army.getSize());
                     if (planets.size() == 0) {
                         continue;
