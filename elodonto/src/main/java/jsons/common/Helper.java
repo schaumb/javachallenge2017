@@ -158,11 +158,12 @@ public class Helper {
             return false;
 
         for (Map.Entry<String, Double> stringDoubleEntry : factions.entrySet()) {
-            if(stringDoubleEntry.getValue() > ourWeight)
+            if(stringDoubleEntry.getValue() > ourWeight) {
+                System.out.println("Overriding running away due to inbound armies -> " + stringDoubleEntry.getKey());
                 return false;
+            }
         }
 
-        System.out.println("Overriding running away due to inbound armies");
         return true;
     }
 }
