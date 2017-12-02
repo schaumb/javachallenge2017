@@ -21,8 +21,38 @@ public class BestOfEveryTimeLogic implements ILogic {
         upper = null;
     }
 
+    void init(GameState gameState) {
+
+    }
+
     @Override
     public void setGameState(GameState gameState) {
+        int tickElapsed = gameState.getTickElapsed();
+        if (tickElapsed == 0) {
+            init(gameState);
+        }
+
+        PlanetState targetPlanet = null;
+        for (PlanetState ps : gameState.getPlanetStates()) {
+            if (ps.getStationedArmies().size() == 0) {
+                targetPlanet = ps;
+                break;
+            }
+        }
+
+        if (targetPlanet == null) {
+            System.err.println("IN TICK " + tickElapsed + " no more empty planets");
+            return;
+        }
+
+        for (PlanetState ps : gameState.getPlanetStates()) {
+            for (Army army : ps.getStationedArmies()) {
+                if (army.isOurs()) {
+                    new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(targetPlanet.getPlanetID()).setArmySize(army.getSize()).sendWithCheck(gameState, OUR_TEAM);
+                }
+            }
+        }
+        /*
         GameDescription game = GameDescription.LATEST_INSTANCE;
         int tickElapsed = gameState.getTickElapsed();
         if(stop || (tickElapsed > 0 && upper == null)) {
@@ -138,6 +168,7 @@ public class BestOfEveryTimeLogic implements ILogic {
                 }
 
         }
+    */
 
     }
 }
