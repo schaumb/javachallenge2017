@@ -94,6 +94,16 @@ public class BestOfEveryTimeLogic implements ILogic {
                     System.out.println("Should we run id:" + ps.getPlanetID() + " " + shouldWeRun);
                 }
                 if ((ps.getOwnershipRatio() >= 1.0 && ps.getStationedArmies().size() == 1) || shouldWeRun) {
+                    if((ps.getOwnershipRatio() >= 1.0 && ps.getStationedArmies().size() == 1)) {
+                        boolean shouldWeStay = false;
+
+                        if(army.getSize() - ps.biggestEnemyArmySizeWhichArrives() < 10) {
+                            shouldWeStay = true;
+                        }
+
+                        if(shouldWeStay)
+                            break;
+                    }
                     if(shouldWeRun) {
                         System.err.println("SHOUD WE RUN TRUE");
                     }
