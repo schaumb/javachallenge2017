@@ -113,7 +113,7 @@ public class BestOfEveryTimeLogic implements ILogic {
                         System.out.println("No target planets :(");
                         continue;
                     }
-                    if (army.getSize() < 5) {
+                    if (army.getSize() < (shouldWeRun ? 5 : 10)) {
                         continue;
                     }
                     new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(planets.get(0).getPlanetID()).setArmySize(army.getSize()).sendWithCheck(gameState, OUR_TEAM);
