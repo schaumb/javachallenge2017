@@ -162,6 +162,7 @@ public class Helper {
                 return false;
         }
 
+        System.out.println("Overriding running away due to inbound armies");
         return true;
     }
 }
