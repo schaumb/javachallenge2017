@@ -140,7 +140,7 @@ public class Helper {
     }
 
 
-    public static boolean planetMyWeightIsGood(GameState gameState, PlanetState planetState) {
+    public static boolean planetMyWeightIsGood(GameState gameState, PlanetState planetState, int x) {
         Map<String, Double> factions = new HashMap<>();
 
         for (Army army : planetState.getStationedArmies()) {
@@ -167,8 +167,10 @@ public class Helper {
         if(ourWeight == null)
             return false;
 
+        ourWeight += x;
+
         for (Map.Entry<String, Double> stringDoubleEntry : factions.entrySet()) {
-            if(stringDoubleEntry.getValue() > ourWeight) {
+            if(stringDoubleEntry.getValue() >= ourWeight) {
                 System.out.println("Overriding running away due to inbound armies -> " + stringDoubleEntry.getKey());
                 return false;
             }
