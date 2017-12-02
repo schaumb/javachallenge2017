@@ -33,13 +33,10 @@ public class BestOfEveryTimeLogic implements ILogic {
         Map<PlanetState, Double> planetsWeight = new HashMap<>();
         return gameState.getPlanetStates()
                 .stream()
-                .filter(p -> p != origPlanet)
                 .sorted(Comparator.comparingDouble((PlanetState p) -> planetsWeight.computeIfAbsent(p, pl -> {
 
                     boolean b = Helper.planetMyWeightIsGood(gameState, pl, x);
-                    System.err.println("From " + origPlanet.getPlanetID() + " to " + pl.getPlanetID() + " is good for us: " + b);
-                    boolean b2 = !pl.isOurs() || pl.getOwnershipRatio() < 0.5;
-                    System.err.println("Is ours: " + pl.isOurs() + " aka " + pl.getOwner() +  " or " + pl.getOwnershipRatio() + " < 0.5: " + b);
+                    boolean b2 = !pl.isOurs() || pl.getOwnershipRatio() < 1.0;
 
                     boolean isGoodForMe = b && b2;
                     double weight = (isGoodForMe ? 1 : 10000000) * Helper.timeToMoveWithoutCeil(origPlanet.getAsPlanet(), pl.getAsPlanet());
