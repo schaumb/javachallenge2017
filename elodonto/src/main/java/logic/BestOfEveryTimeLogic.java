@@ -52,15 +52,16 @@ public class BestOfEveryTimeLogic implements ILogic {
             init(gameState);
         }
 
+        int splitSize = 10;
         if (tickElapsed == 0) {
             for (PlanetState ps : gameState.getPlanetStates()) {
                 for (Army army : ps.getStationedArmies()) {
                     if (army.isOurs()) {
                         int armySize = army.getSize();
                         for (PlanetState empty_ps : gameState.getPlanetStates()) {
-                            if (empty_ps.getStationedArmies().size() == 0 && armySize >= 5) {
-                                new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(empty_ps.getPlanetID()).setArmySize(5).sendWithCheck(gameState, OUR_TEAM);
-                                armySize -= 5;
+                            if (empty_ps.getStationedArmies().size() == 0 && armySize >= splitSize) {
+                                new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(empty_ps.getPlanetID()).setArmySize(splitSize).sendWithCheck(gameState, OUR_TEAM);
+                                armySize -= splitSize;
                             }
                         }
                     }
