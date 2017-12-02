@@ -16,8 +16,8 @@ public class BestOfEveryTimeLogic implements ILogic {
     boolean stop;
     @Override
     public void setGameDescription(GameDescription gameDescription) {
-        new Move().setArmySize(50).setMoveFrom(101).setMoveTo(105).send(OUR_TEAM);
-        new Move().setArmySize(50).setMoveFrom(102).setMoveTo(106).send(OUR_TEAM);
+        // new Move().setArmySize(50).setMoveFrom(101).setMoveTo(105).send(OUR_TEAM);
+        // new Move().setArmySize(50).setMoveFrom(102).setMoveTo(106).send(OUR_TEAM);
         stop = false;
         upper = null;
     }
@@ -52,10 +52,26 @@ public class BestOfEveryTimeLogic implements ILogic {
             init(gameState);
         }
 
+        if (tickElapsed == 0) {
+            for (PlanetState ps : gameState.getPlanetStates()) {
+                for (Army army : ps.getStationedArmies()) {
+                    if (army.isOurs()) {
+                        int armySize = army.getSize();
+                        for (PlanetState empty_ps : gameState.getPlanetStates()) {
+                            if (empty_ps.getStationedArmies().size() == 0 && armySize >= 5) {
+                                new Move().setMoveFrom(ps.getPlanetID()).setMoveTo(empty_ps.getPlanetID()).setArmySize(5).sendWithCheck(gameState, OUR_TEAM);
+                                armySize -= 5;
+                            }
+                        }
+                    }
+                }
+            }
+            return;
+        }
 
         for (PlanetState ps : gameState.getPlanetStates()) {
             for (Army army : ps.getStationedArmies()) {
-                if (army.isOurs()) {
+                if (army.isOurs() && ps.getOwnershipRatio() >= 1.0) {
                     ArrayList<PlanetState> planets = getTargetPlanets(gameState, army.getSize());
                     if (planets.size() == 0) {
                         continue;
