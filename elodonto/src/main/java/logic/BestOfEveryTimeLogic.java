@@ -33,15 +33,15 @@ public class BestOfEveryTimeLogic implements ILogic {
         Map<PlanetState, Double> planetsWeight = new HashMap<>();
         return gameState.getPlanetStates()
                 .stream()
+                .filter(pl -> pl != origPlanet)
+                .filter(pl -> !pl.isOurs() || pl.getOwnershipRatio() < 1.0)
                 .sorted(Comparator.comparingDouble((PlanetState p) -> planetsWeight.computeIfAbsent(p, pl -> {
 
                     boolean b = Helper.planetMyWeightIsGood(gameState, pl, x);
-                    boolean b2 = !pl.isOurs() || pl.getOwnershipRatio() < 1.0;
 
-                    boolean isGoodForMe = b && b2;
+                    boolean isGoodForMe = b;
                     double weight = (isGoodForMe ? 1 : 10000000) * Helper.timeToMoveWithoutCeil(origPlanet.getAsPlanet(), pl.getAsPlanet());
 
-                    System.err.println("This is good for me: " + isGoodForMe + " because weight: " + weight);
                     return weight;
                 })))
                 .collect(Collectors.toList());
@@ -86,8 +86,12 @@ public class BestOfEveryTimeLogic implements ILogic {
 
         for (PlanetState ps : gameState.getPlanetStates()) {
             boolean shouldWeRun = !Helper.planetMyWeightIsGood(gameState, ps, 0);
+
             for (Army army : ps.getStationedArmies()) {
                 if (army.isOurs() && ((ps.getOwnershipRatio() >= 1.0 && ps.getStationedArmies().size() == 1) || shouldWeRun)) {
+                    if(shouldWeRun) {
+                        System.err.println("SHOUD WE RUN TRUE");
+                    }
                     List<PlanetState> planets = getTargetPlanets(gameState, ps, army.getSize());
                     if (planets.size() == 0) {
                         System.out.println("No target planets :(");

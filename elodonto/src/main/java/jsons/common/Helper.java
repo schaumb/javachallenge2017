@@ -164,13 +164,14 @@ public class Helper {
 
         Double ourWeight = factions.get(ILogic.OUR_TEAM);
 
-        if(ourWeight == null)
+        if(ourWeight == null) {
             return false;
+        }
 
         ourWeight += x;
 
         for (Map.Entry<String, Double> stringDoubleEntry : factions.entrySet()) {
-            if(stringDoubleEntry.getValue() >= ourWeight) {
+            if(stringDoubleEntry.getValue() >= ourWeight && !stringDoubleEntry.getKey().equals(ILogic.OUR_TEAM)) {
                 System.out.println("Overriding running away due to inbound armies -> " + stringDoubleEntry.getKey());
                 return false;
             }
