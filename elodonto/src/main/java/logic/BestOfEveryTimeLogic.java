@@ -1,6 +1,8 @@
 package logic;
 
 import jsons.Move;
+import jsons.*;
+import jsons.common.*;
 import jsons.common.ArmyExtent;
 import jsons.gamedesc.GameDescription;
 import jsons.gamestate.Army;
@@ -26,7 +28,7 @@ public class BestOfEveryTimeLogic implements ILogic {
 
     }
 
-    ArrayList<PlanetState> getTargetPlanets(GameState gameState, int threshold) {
+    ArrayList<PlanetState> getTargetPlanets(GameState gameState, PlanetState origPlanet, int threshold) {
         ArrayList<PlanetState> states = new ArrayList<PlanetState>();
         for (PlanetState ps : gameState.getPlanetStates()) {
             if (ps.getOwnershipRatio() >= 1.0) {
@@ -42,6 +44,8 @@ public class BestOfEveryTimeLogic implements ILogic {
                 states.add(ps);
             }
         }
+        Collections.sort(states, (lhs, rhs) -> (int)(Helper.timeToMoveWithoutCeil(
+            lhs.getAsPlanet(), origPlanet.getAsPlanet()) - Helper.timeToMoveWithoutCeil(rhs.getAsPlanet(), origPlanet.getAsPlanet())));
         return states;
     }
 
@@ -73,7 +77,7 @@ public class BestOfEveryTimeLogic implements ILogic {
         for (PlanetState ps : gameState.getPlanetStates()) {
             for (Army army : ps.getStationedArmies()) {
                 if (army.isOurs() && ps.getOwnershipRatio() >= 1.0) {
-                    ArrayList<PlanetState> planets = getTargetPlanets(gameState, army.getSize());
+                    ArrayList<PlanetState> planets = getTargetPlanets(gameState, ps, army.getSize());
                     if (planets.size() == 0) {
                         continue;
                     }
