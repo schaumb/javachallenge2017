@@ -29,7 +29,16 @@ public class BestOfEveryTimeLogic implements ILogic {
     ArrayList<PlanetState> getTargetPlanets(GameState gameState, int threshold) {
         ArrayList<PlanetState> states = new ArrayList<PlanetState>();
         for (PlanetState ps : gameState.getPlanetStates()) {
-            if (ps.getStationedArmies().size() < threshold) {
+            if (ps.getOwnershipRatio() >= 1.0) {
+                continue;
+            }
+            int enemyArmySize = 0;
+            for (Army army : ps.getStationedArmies()) {
+                if (!army.isOurs()) {
+                    enemyArmySize += army.getSize();
+                }
+            }
+            if (enemyArmySize < threshold) {
                 states.add(ps);
             }
         }
