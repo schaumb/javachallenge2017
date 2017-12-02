@@ -10,6 +10,12 @@ containers:
         mode: 0o1777
         subdirs:
           .m2: #
+      /tmp: !Tmpfs
+        size: 100Mi
+        mode: 0o1777
+        subdirs:
+          .X11-unix: #
+      /tmp/.X11-unix/: !BindRW /volumes/X11
 
 commands:
   build: !Command
@@ -20,3 +26,9 @@ commands:
       cp -r /work/* .
       mvn package
       cp /tmp/target/javachallenge-jar-with-dependencies.jar /work
+  run: !Command
+    description: "Run program"
+    container: java
+    work-dir: /tmp
+    run: |
+      java -jar /work/javachallenge-jar-with-dependencies.jar
