@@ -100,6 +100,10 @@ public class BestOfEveryTimeLogic implements ILogic {
                         if(army.getSize() - ps.biggestEnemyArmySizeWhichArrives() < 10) {
                             shouldWeStay = true;
                         }
+                        int diff = army.getSize() - ps.biggestEnemyArmySizeWhichIsHere();
+                        if(diff > 0 && diff < 10) {
+                            shouldWeStay = true;
+                        }
 
                         if(shouldWeStay)
                             break;

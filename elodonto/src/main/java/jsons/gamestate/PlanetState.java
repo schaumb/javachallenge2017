@@ -6,6 +6,7 @@ import jsons.gamedesc.Planet;
 import logic.ILogic;
 
 import java.util.*;
+import java.util.function.Function;
 
 public class PlanetState implements IOwned {
     private int planetID;
@@ -121,5 +122,21 @@ public class PlanetState implements IOwned {
                 ", movingArmies=" + movingArmies +
                 ", stationedArmies=" + stationedArmies +
                 '}';
+    }
+
+    public int biggestEnemyArmySizeWhichIsHere() {
+        Map<String, Integer> armies = new HashMap<>();
+
+        for (Army army : getStationedArmies()) {
+            armies.compute(army.getOwner(), (k, v) -> {
+                if(v == null)
+                    return army.getSize();
+                return v + army.getSize();
+            });
+        }
+
+        return armies.entrySet().stream().filter(i -> !Objects.equals(i.getKey(), ILogic.OUR_TEAM))
+                .mapToInt(Map.Entry::getValue)
+                .max().orElse(0);
     }
 }
