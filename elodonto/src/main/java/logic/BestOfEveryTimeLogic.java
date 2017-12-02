@@ -36,8 +36,12 @@ public class BestOfEveryTimeLogic implements ILogic {
                 .filter(p -> p != origPlanet)
                 .sorted(Comparator.comparingDouble((PlanetState p) -> planetsWeight.computeIfAbsent(p, pl -> {
 
-                    return (Helper.planetMyWeightIsGood(gameState, pl) &&
-                            (!pl.isOurs() || pl.getOwnershipRatio() < 0.5)? -1 : -10000) * Helper.timeToMoveWithoutCeil(origPlanet.getAsPlanet(), pl.getAsPlanet());
+                    boolean b = Helper.planetMyWeightIsGood(gameState, pl);
+                    System.err.println("From " + origPlanet.getPlanetID() + " to " + pl.getPlanetID() + " is good for us: " + b);
+                    boolean b2 = !pl.isOurs() || pl.getOwnershipRatio() < 0.5;
+                    System.err.println("Is ours: " + pl.isOurs() +  " or " + pl.getOwnershipRatio() + " < 0.5: " + b);
+
+                    return (b && b2 ? -1 : -10000) * Helper.timeToMoveWithoutCeil(origPlanet.getAsPlanet(), pl.getAsPlanet());
                 })).reversed())
                 .collect(Collectors.toList());
     }
